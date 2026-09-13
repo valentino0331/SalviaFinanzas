@@ -279,6 +279,18 @@ class ApiService {
     throw Exception("Error al ahorrar en la misión");
   }
 
+  static Future<void> deleteSavingsMission(int id) async {
+    if (_isOfflineMode) {
+      _localDb['savings'].removeWhere((m) => m['id'] == id);
+      await _saveLocalDb();
+      return;
+    }
+    try {
+      final res = await http.delete(Uri.parse('$baseUrl/savings-missions/$id'), headers: _headers);
+      if (res.statusCode != 200 && res.statusCode != 204) throw Exception("Error al borrar misión");
+    } catch (_) {}
+  }
+
   // HÁBITOS
   static Future<List<dynamic>> getHabits() async {
     if (_isOfflineMode) {
