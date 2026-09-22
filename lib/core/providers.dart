@@ -187,6 +187,7 @@ class SavingsNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
     } catch (_) {}
   }
 
+
   Future<bool> saveFunds(int id, double amount) async {
     try {
       final result = await ApiService.saveToMission(id, amount);

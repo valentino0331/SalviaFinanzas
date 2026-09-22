@@ -227,12 +227,15 @@ class ApiService {
   static Future<Map<String, dynamic>> addSavingsMission(Map<String, dynamic> mission) async {
     if (_isOfflineMode) {
       final newMission = {
-        'id': _localDb['savings'].length + 1,
+        'id': _localDb['savings'].isEmpty
+            ? 1
+            : (_localDb['savings'].last['id'] as int) + 1,
         'user_id': _token ?? 'google_mock_123',
         'title': mission['title'],
         'target_amount': double.parse(mission['target_amount'].toString()),
         'current_amount': 0.0,
-        'deadline': mission['deadline'],
+        // Fecha límite opcional enviada desde el formulario
+        'deadline': mission['deadline'] as String?,
         'icon_name': mission['icon_name'] ?? 'savings',
         'is_completed': false,
       };
