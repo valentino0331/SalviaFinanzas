@@ -516,7 +516,7 @@ class _HeroSavingsCard extends StatelessWidget {
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.savings_outlined, size: 14, color: Color(0xFFA5D6A7))),
         const SizedBox(width: 8),
-        Text('BOVEDA DE AHORROS', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: const Color(0xFFA5D6A7))),
+        Text('BÓVEDA DE AHORROS', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: const Color(0xFFA5D6A7))),
       ]),
       const SizedBox(height: 24),
       SizedBox(width: 170, height: 170, child: Stack(alignment: Alignment.center, children: [
