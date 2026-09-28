@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../domain/savings_mission_model.dart';
-import 'savings_screen.dart';
 
 // Componentes reutilizables del modulo de ahorros
 

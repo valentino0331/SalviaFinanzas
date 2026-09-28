@@ -155,9 +155,7 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                 final target = double.tryParse(targetCtrl.text) ?? 0.0;
                 if (title.isEmpty || target <= 0) return;
                 await HapticFeedback.mediumImpact();
-                final deadlineStr = selectedDate != null
-                    ? selectedDate!.toIso8601String().split('T').first
-                    : null;
+                final deadlineStr = selectedDate?.toIso8601String().split('T').first;
                 // ignore: use_build_context_synchronously
                 ref.read(savingsProvider.notifier).addMission(
                   title, target, deadline: deadlineStr, iconName: selectedIcon);
@@ -174,7 +172,7 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
               child: Text('Crear meta', style: GoogleFonts.outfit(fontWeight: FontWeight.w700))),
-          ]))));
+          ])));
   }
 
   // Dialog: aportar fondos a una meta existente
