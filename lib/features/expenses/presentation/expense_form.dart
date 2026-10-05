@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme.dart';
 import '../../../core/providers.dart';
 
@@ -21,6 +22,7 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
   String _selectedCategory = 'Comida';
   String _selectedSubcategory = 'Almuerzo';
   String _selectedRecurrence = 'once';
+  DateTime _selectedDate = DateTime.now();
 
   final Map<String, List<String>> _predefinedSubcategories = {
     'Comida': ['Almuerzo', 'Cena', 'Pollo', 'Supermercado', 'Merienda', 'Otro...'],
@@ -53,6 +55,23 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
     });
   }
 
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2025, 1, 1),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: 'Selecciona la fecha del gasto',
+      cancelText: 'Cancelar',
+      confirmText: 'Aceptar',
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     await HapticFeedback.mediumImpact();
@@ -63,9 +82,11 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
         : _selectedSubcategory;
 
     if (sub.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Por favor especifica la subcategoría")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Por favor especifica la subcategoría")),
+        );
+      }
       return;
     }
 
@@ -74,6 +95,7 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
       _selectedCategory,
       sub,
       _descController.text.trim(),
+      date: _selectedDate.toIso8601String(),
       recurrence: _selectedRecurrence,
     );
 
@@ -157,7 +179,7 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
 
               // CATEGORÍA DROPDOWN
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(
                   labelText: "Categoría",
                   prefixIcon: Icon(Icons.category_outlined),
@@ -190,7 +212,7 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
                   return ChoiceChip(
                     label: Text(sub, style: GoogleFonts.outfit(fontSize: 12.5)),
                     selected: isSelected,
-                    selectedColor: RusticTheme.primaryGreen.withOpacity(0.18),
+                    selectedColor: RusticTheme.primaryGreen.withValues(alpha: 0.18),
                     backgroundColor: Colors.white,
                     side: BorderSide(
                       color: isSelected ? RusticTheme.primaryGreen : const Color(0xFFE4E2DC),
@@ -227,9 +249,59 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
                 const SizedBox(height: 16),
               ],
 
+              // SELECTOR VISUAL DE FECHA
+              InkWell(
+                onTap: _pickDate,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFD4D2CC)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_month_outlined, color: RusticTheme.primaryGreen, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Fecha del movimiento",
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: RusticTheme.lightText,
+                              ),
+                            ),
+                            Text(
+                              DateFormat('dd/MM/yyyy').format(_selectedDate),
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: RusticTheme.darkText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        "Cambiar",
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: RusticTheme.primaryGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // RECURRENCIA DROPDOWN
               DropdownButtonFormField<String>(
-                value: _selectedRecurrence,
+                initialValue: _selectedRecurrence,
                 decoration: const InputDecoration(
                   labelText: "Recurrencia",
                   prefixIcon: Icon(Icons.replay),
