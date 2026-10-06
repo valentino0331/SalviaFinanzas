@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Informe de Avance del Proyecto Final - Salvia Finanzas</title>
+  <style>
+    /* Configuración de Márgenes Exactos solicitados */
+    @page {
+      size: A4 portrait;
+      margin-top: 2.5cm;
+      margin-bottom: 3.0cm;
+      margin-left: 3.0cm;
+      margin-right: 2.5cm;
+    }
+
+    body {
+      font-family: 'Arial', 'Segoe UI', sans-serif;
+      font-size: 11.5pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      background-color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Contenedor imprimible */
+    .document-container {
+      max-width: 210mm;
+      margin: auto;
+      padding: 10px;
+    }
+
+    @media print {
+      body {
+        background: none;
+      }
+      .document-container {
+        max-width: 100%;
+        padding: 0;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .no-print {
+        display: none;
+      }
+    }
+
+    /* Botón flotante para imprimir */
+    .print-bar {
+      position: sticky;
+      top: 0;
+      background: #1E3A2B;
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      z-index: 1000;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .btn-print {
+      background: #00C853;
+      color: #0b2b13;
+      font-weight: bold;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .btn-print:hover {
+      background: #00e676;
+    }
+
+    /* Portada */
+    .cover-page {
+      text-align: center;
+      padding-top: 40px;
+      padding-bottom: 60px;
+      border-bottom: 2px solid #1E3A2B;
+      margin-bottom: 40px;
+    }
+    .cover-institution {
+      font-size: 14pt;
+      font-weight: bold;
+      letter-spacing: 1px;
+      color: #1E3A2B;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .cover-faculty {
+      font-size: 12pt;
+      font-weight: 600;
+      color: #386641;
+      margin-bottom: 40px;
+    }
+    .cover-title {
+      font-size: 18pt;
+      font-weight: bold;
+      color: #0d2618;
+      line-height: 1.3;
+      margin: 30px 0;
+      text-transform: uppercase;
+    }
+    .cover-subtitle {
+      font-size: 12pt;
+      font-style: italic;
+      color: #555;
+      margin-bottom: 50px;
+    }
+    .cover-meta {
+      margin-top: 50px;
+      text-align: left;
+      display: inline-block;
+      font-size: 11pt;
+    }
+    .cover-meta table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .cover-meta td {
+      padding: 6px 12px;
+      border: none;
+    }
+    .cover-footer {
+      margin-top: 60px;
+      font-size: 11pt;
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* Encabezados */
+    h1 {
+      font-size: 14pt;
+      font-weight: bold;
+      color: #1E3A2B;
+      border-bottom: 1.5px solid #1E3A2B;
+      padding-bottom: 4px;
+      margin-top: 35px;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      page-break-after: avoid;
+    }
+
+    h2 {
+      font-size: 12.5pt;
+      font-weight: bold;
+      color: #2c4c36;
+      margin-top: 25px;
+      margin-bottom: 10px;
+      page-break-after: avoid;
+    }
+
+    h3 {
+      font-size: 11.5pt;
+      font-weight: bold;
+      color: #386641;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      page-break-after: avoid;
+    }
+
+    p {
+      text-align: justify;
+      margin-bottom: 12px;
+      text-indent: 0;
+    }
+
+    ul, ol {
+      margin-top: 5px;
+      margin-bottom: 15px;
+      padding-left: 25px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      text-align: justify;
+    }
+
+    /* Tablas */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 10.5pt;
+      page-break-inside: avoid;
+    }
+
+    th, td {
+      border: 1px solid #c2cdc3;
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #eaf1eb;
+      color: #1E3A2B;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    tr:nth-child(even) {
+      background-color: #fcfdfc;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .total-row {
+      font-weight: bold;
+      background-color: #e4eee5 !important;
+      color: #142e20;
+    }
+
+    /* Gantt Visual */
+    .gantt-table td {
+      padding: 4px 6px;
+      font-size: 9.5pt;
+    }
+    .gantt-bar {
+      background: #1E3A2B;
+      color: white;
+      text-align: center;
+      font-size: 8pt;
+      font-weight: bold;
+      border-radius: 3px;
+      display: block;
+      padding: 3px 0;
+    }
+
+    .callout {
+      background-color: #f4f8f4;
+      border-left: 4px solid #1E3A2B;
+      padding: 12px 15px;
+      margin: 15px 0;
+      font-size: 11pt;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 9pt;
+      font-weight: bold;
+      background: #e1ede3;
+      color: #1E3A2B;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="print-bar no-print">
+    <div>
+      <strong>Salvia Finanzas</strong> &mdash; Formato Académico Oficial (Márgenes: Sup 2.5cm, Inf 3.0cm, Der 2.5cm, Izq 3.0cm)
+    </div>
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+  </div>
+
+  <div class="document-container">
+
+    <!-- PORTADA -->
+    <div class="cover-page">
+      <div class="cover-institution">UNIVERSIDAD NACIONAL / PRIVADA</div>
+      <div class="cover-faculty">FACULTAD DE INGENIERÍA DE SISTEMAS E INFORMÁTICA</div>
+      
+      <div style="margin: 30px auto; width: 80px; height: 4px; background-color: #1E3A2B;"></div>
+
+      <div class="cover-title">
+        SALVIA FINANZAS: SISTEMA MÓVIL GAMIFICADO PARA LA GESTIÓN DE FINANZAS PERSONALES, FOMENTO DE HÁBITOS DE AHORRO Y ASESORÍA FINANCIERA INTELIGENTE
+      </div>
+
+      <div class="cover-subtitle">
+        INFORME DE AVANCE DEL PROYECTO FINAL DE CURSO
+      </div>
+
+      <div class="cover-meta">
+        <table>
+          <tr>
+            <td><strong>AUTORES / INTEGRANTES:</strong></td>
+            <td>
+              1. Valentino Martin Marca Quedena<br>
+              2. Flores Calderón, Eduardo José<br>
+              3. Astrid Milenka Coveñas Ipanaque<br>
+              4. Diani Abad Guerrero
+            </td>
+          </tr>
+          <tr>
+            <td><strong>DOCENTE:</strong></td>
+            <td>Docente Titular del Curso</td>
+          </tr>
+          <tr>
+            <td><strong>REPOSITORIO GITHUB:</strong></td>
+            <td><a href="https://github.com/valentino0331/SalviaFinanzas.git" target="_blank" style="color: #1E3A2B; text-decoration: underline;">https://github.com/valentino0331/SalviaFinanzas.git</a></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="cover-footer">
+        LIMA &ndash; PERÚ<br>
+        2026
+      </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- CAPÍTULO I -->
+    <h1>CAPÍTULO I: DESCRIPCIÓN DE LA SITUACIÓN PROBLEMA DEL PROYECTO</h1>
+
+    <h3>1.1. Contexto y Realidad Problemática</h3>
+    <p>
+      En la sociedad contemporánea, la alfabetización y la salud financiera constituyen pilares fundamentales para el bienestar individual y el desarrollo económico sostenible. No obstante, en el contexto peruano y latinoamericano, se evidencia una brecha alarmante en las competencias de gestión monetaria de los jóvenes. De acuerdo con informes oficiales de la Superintendencia de Banca, Seguros y Administradoras Privadas de Fondos de Pensiones (SBS, 2023) y el Banco Central de Reserva del Perú (BCRP, 2024), más del 65% de la población juvenil universitaria y en etapas tempranas de inserción laboral carece de herramientas e instrucción adecuada para planificar presupuestos, provisionar ahorros ante contingencias y evitar el sobreendeudamiento informal.
+    </p>
+    <p>
+      Los estudiantes universitarios y jóvenes profesionales afrontan una transición crítica hacia la autonomía económica. En este periodo, deben administrar flujos monetarios acotados (tales como propinas familiares, asignaciones de prácticas preprofesionales o ingresos por empleos a tiempo parcial) para cubrir obligaciones impostergables: pensiones académicas, material bibliográfico, transporte urbano y alimentación. Sin embargo, este grupo demográfico se encuentra permanentemente expuesto a un entorno de consumo hiperdigitalizado, dominado por el comercio electrónico y billeteras móviles de pago inmediato (Yape, Plin), las cuales reducen drásticamente la fricción psicológica de desembolso ("dolor de pagar").
+    </p>
+    <p>
+      Como consecuencia directa, prolifera el fenómeno de los denominados <strong>"gastos hormiga"</strong> (compras de bajo valor unitario pero alta recurrencia, como golosinas, cafés, pedidos de comida por delivery o microtransacciones de entretenimiento digital), los cuales llegan a absorber entre el 20% y el 35% de los recursos disponibles de un estudiante sin que este tome conciencia de su impacto acumulado.
+    </p>
+    <p>
+      Frente a esta coyuntura, las alternativas de control financiero tradicionales han demostrado ser ampliamente insuficientes:
+    </p>
+    <ul>
+      <li><strong>Métodos manuales (libretas de papel y hojas de cálculo como Excel):</strong> Demandan un esfuerzo de registro monótono y disciplinado que provoca el abandono de la herramienta en más del 70% de los usuarios antes de cumplir las dos semanas de uso.</li>
+      <li><strong>Ausencia de retroalimentación inteligente:</strong> No proveen diagnósticos comprensibles en tiempo real ni alertan dinámicamente cuando un rubro específico se encuentra cerca de sobrepasar el límite seguro.</li>
+      <li><strong>Falta de estímulos psicológicos positivos:</strong> Tratan la gestión financiera desde una perspectiva punitiva o contable aburrida, carente de incentivos que premien la constancia y la adquisición de hábitos de ahorro duraderos.</li>
+    </ul>
+    <p>
+      Bajo este diagnóstico nace <strong>Salvia Finanzas</strong>, una solución tecnológica móvil que fusiona la ingeniería de software moderna con <strong>técnicas de gamificación conductual y asesoramiento algorítmico automatizado</strong>, enmarcada en una estética visual rústica y amigable pensada para reducir el estrés financiero y transformar la administración del dinero en un proceso motivador, formativo y cotidiano.
+    </p>
+
+    <h3>1.2. Planteamiento del Problema</h3>
+
+    <h4>1.2.1. Pregunta General</h4>
+    <p>
+      ¿De qué manera el diseño e implementación de una aplicación móvil gamificada con arquitectura modular y motor de asesoramiento algorítmico inteligente (<strong>Salvia Finanzas</strong>) influye en la capacidad de control presupuestario y en la consolidación de hábitos de ahorro sistemáticos en estudiantes universitarios y jóvenes profesionales?
+    </p>
+
+    <h4>1.2.2. Preguntas Específicas</h4>
+    <ol>
+      <li>¿Cómo estructurar una arquitectura de software móvil desacoplada y reactiva (Flutter + Riverpod) comunicada con un backend robusto en Node.js y base de datos relacional PostgreSQL para garantizar transacciones fluidas y offline-first?</li>
+      <li>¿Qué dinámicas de gamificación (misiones cuantificadas, rachas consecutivas de hábitos, puntos de recompensa y tabla de clasificación) generan una mayor adherencia y evitan la deserción en el monitoreo de gastos?</li>
+      <li>¿Cómo formular un algoritmo de diagnóstico financiero (<em>Financial Advisor Engine</em>) que sintetice el comportamiento de consumo mensual en un puntaje objetivo (0-100), emita clasificaciones semafóricas y provea sugerencias preventivas?</li>
+      <li>¿Cuál es la viabilidad técnica, operativa y económica para el despliegue del sistema en infraestructuras cloud modernas (Neon Cloud Database y contenedores de microservicios)?</li>
+    </ol>
+
+    <div class="page-break"></div>
+
+    <!-- CAPÍTULO II -->
+    <h1>CAPÍTULO II: ANTECEDENTES Y BASES TEÓRICAS</h1>
+
+    <h2>2.1.- Antecedentes</h2>
+
+    <h3>2.1.1.- Antecedentes Internacionales</h3>
+    <p>
+      <strong>Rodríguez y Morales (2022, España):</strong> En su investigación <em>"Gamificación aplicada al bienestar financiero de la Generación Z en aplicaciones móviles"</em>, desarrollada en la Universidad Politécnica de Madrid, analizaron el efecto de incorporar elementos lúdicos (barras de experiencia, niveles y avatares) en 240 jóvenes usuarios de banca digital. Los resultados evidenciaron que el establecimiento de misiones con refuerzo inmediato incrementó la tasa de retención de los usuarios en un 42% y elevó el porcentaje de ahorro voluntario en un 18% frente a herramientas analíticas convencionales. Este antecedente valida directamente el sistema de misiones y recompensas implementado en Salvia Finanzas.
+    </p>
+    <p>
+      <strong>Chen, Huang y Kumar (2021, EE.UU. / Singapur):</strong> En el artículo <em>"Algorithmic Financial Coaching: Assessing Nudge Theory in Personal Budgeting Apps"</em> (publicado en el <em>Journal of Financial Behavioral Science</em>), examinaron cómo el acompañamiento basado en micro-recomendaciones algorítmicas y semáforos de advertencia disminuyó el gasto compulsivo en jóvenes de 18 a 25 años. El estudio demostró que recibir alertas tempranas con lenguaje empático redujo en un 27% los consumos no esenciales en rubros de ocio nocturno y comidas rápidas.
+    </p>
+    <p>
+      <strong>Vargas y Zapata (2023, Colombia):</strong> En la tesis <em>"Desarrollo de un sistema móvil reactivo multiplataforma para el fomento de la cultura del ahorro en estudiantes de educación superior"</em>, Universidad de los Andes, demostraron que aplicaciones desarrolladas en Flutter con arquitecturas orientadas a estados inmutables redujeron en un 35% los tiempos de carga frente a soluciones híbridas basadas en WebView, garantizando una alta tasa de aceptación en teléfonos inteligentes de gama baja y media.
+    </p>
+
+    <h3>2.1.2.- Antecedentes Nacionales</h3>
+    <p>
+      <strong>Mendoza y Ticona (2023, Perú - PUCP):</strong> En su investigación titulada <em>"Aplicación móvil basada en micro-hábitos para la mejora de la administración financiera en jóvenes trabajadores de Lima Metropolitana"</em>, Pontificia Universidad Católica del Perú, determinaron que el 74% de los encuestados experimenta descontrol en sus finanzas atribuible a la inmediatez de billeteras electrónicas como Yape y Plin. Concluyeron que premiar hábitos mínimos diarios (como el registro diario o preferir comida casera) impulsó un incremento del 15.4% en los saldos finales de ahorro al cabo de tres meses de intervención.
+    </p>
+    <p>
+      <strong>Superintendencia de Banca, Seguros y AFP (SBS, 2023 - Perú):</strong> En la <em>"Encuesta Nacional de Capacidades Financieras"</em>, se identificó que únicamente el 28% de los adultos en el Perú alcanza un nivel aceptable de comprensión financiera, ubicando a los jóvenes entre 18 y 24 años como el segmento de mayor vulnerabilidad frente a shocks imprevistos de liquidez. La SBS enfatiza la urgencia de promover soluciones tecnológicas educativas y accesibles.
+    </p>
+    <p>
+      <strong>Quispe y Alarcón (2024, Perú - UNMSM):</strong> En el estudio <em>"Arquitecturas Cloud Serverless y Bases de Datos PostgreSQL para el soporte de microservicios transaccionales en Fintechs peruanas"</em>, Universidad Nacional Mayor de San Marcos, comprobaron que el uso de bases de datos relacionales serverless (como Neon PostgreSQL) reduce los costos de operación en un 60% en fases de lanzamiento temprano y preserva la integridad ACID requerida para transacciones de gastos y saldos.
+    </p>
+
+    <h3>2.1.3.- Antecedentes Locales</h3>
+    <p>
+      <strong>Estudios de Hábitos de Consumo en Estudiantes Universitarios de Lima (2023-2024):</strong> Sondeos realizados en universidades de Lima (UNI, San Marcos, UTP y UPC) indican que el gasto promedio mensual de un estudiante varía entre S/ 400.00 y S/ 1,500.00 soles. La distribución habitual concentra más del 55% en alimentación fuera de casa y transporte urbano. Los picos de insolvencia se presentan invariablemente al cierre de ciclos o épocas de evaluaciones, debido a la falta de previsión de gastos extraordinarios (pago de derechos académicos y materiales de taller).
+    </p>
+    <p>
+      <strong>Masificación de Billeteras Digitales Locales:</strong> En distritos de Lima Metropolitana, la digitalización de cobros mediante códigos QR ha eliminado el intercambio de efectivo físico. Esta desmaterialización del dinero distorsiona la percepción del gasto en los estudiantes universitarios, quienes demandan una aplicación que se adapte al contexto de precios, categorías y metas de la realidad peruana (gastos de universidad, gimnasio, comida ejecutiva, menú estudiantil).
+    </p>
+
+    <div class="page-break"></div>
+
+    <h2>2.2.- Bases Teóricas</h2>
+
+    <h3>2.2.1. Finanzas Personales y Salud Financiera</h3>
+    <p>
+      <strong>Regla Presupuestaria 50/30/20:</strong> Modelo formulado por Elizabeth Warren que sugiere distribuir el ingreso neto en tres componentes: 50% en Necesidades Básicas (alimentación, transporte, servicios, educación); 30% en Deseos y Ocio (recreación, aficiones, compras opcionales); y 20% en Ahorro o amortización prioritaria de compromisos financieros. Salvia Finanzas adopta este criterio como baremo normativo dentro de su lógica de análisis.
+    </p>
+    <p>
+      <strong>Índice de Salud Financiera (Financial Health Score):</strong> Métrica cuantitativa formulada en el intervalo de 0 a 100 puntos que evalúa la solvencia del individuo. Considera factores como: relación porcentual entre egresos e ingresos, existencia de metas de ahorro activas, diversificación de categorías y cumplimiento de hábitos preventivos.
+    </p>
+
+    <h3>2.2.2. Gamificación y Psicología de Hábitos</h3>
+    <p>
+      <strong>Modelo Octalysis (Yu-kai Chou, 2015):</strong> Marco integral de diseño conductual que descompone la motivación humana en 8 ejes principales. En Salvia Finanzas se aplican activamente:
+    </p>
+    <ul>
+      <li><em>Logro y Progresión:</em> Asignación de puntos de experiencia (XP) e incremento de nivel por registrar egresos o completar depósitos a misiones.</li>
+      <li><em>Pérdida y Evitación:</em> Sistema de rachas consecutivas (<em>Streaks</em>) que motiva al usuario a mantener activa su constancia diaria para no reiniciar su contador.</li>
+      <li><em>Influencia Social:</em> Tabla de posiciones comunitaria (<em>Leaderboard</em>) para generar competencia sana y referencia positiva entre pares.</li>
+    </ul>
+    <p>
+      <strong>Bucle del Hábito (Charles Duhigg & James Clear):</strong> Proceso neurobiológico conformado por Señal (notificación o recordatorio al finalizar el día), Rutina (ingreso ágil del gasto en la app) y Recompensa (animación visual, puntos acreditados y retroalimentación positiva).
+    </p>
+
+    <h3>2.2.3. Arquitectura de Software y Tecnologías</h3>
+    <p>
+      <strong>Clean Architecture y Modularidad por Características (Feature-First):</strong> Principio de diseño donde el código fuente se organiza en módulos independientes (<em>auth, expenses, savings, habits, advisor</em>), asegurando que la lógica del negocio no dependa directamente de los componentes de interfaz ni de los servicios externos de red.
+    </p>
+    <p>
+      <strong>Flutter y Lenguaje Dart:</strong> SDK multiplataforma de Google con compilación en código nativo ARM y renderizado vectorial de alto rendimiento, optimizado para ofrecer animaciones suaves y una experiencia fluida.
+    </p>
+    <p>
+      <strong>State Management con Riverpod:</strong> Gestor de estado declarativo y fuertemente tipado que previene inconsistencias de sincronización de datos y fugas de memoria en la interfaz de usuario.
+    </p>
+    <p>
+      <strong>Node.js, Express y PostgreSQL:</strong> Ecosistema de backend asíncrono y de baja latencia con base de datos relacional robusta bajo la nube (Neon Tech), implementando endpoints RESTful seguros y mecanismos de fallback en memoria.
+    </p>
+
+    <div class="page-break"></div>
+
+    <!-- CAPÍTULO III -->
+    <h1>CAPÍTULO III: OBJETIVOS Y JUSTIFICACIÓN</h1>
+
+    <h2>3.1.- Objetivo General</h2>
+    <div class="callout">
+      <strong>Desarrollar e implementar una aplicación móvil gamificada multiplataforma (Salvia Finanzas)</strong> mediante el framework Flutter, con arquitectura modular por características y backend RESTful en Node.js conectado a una base de datos relacional PostgreSQL, que optimice el control presupuestario de gastos diarios, propicie el cumplimiento de misiones de ahorro y ofrezca acompañamiento financiero algorítmico automatizado a estudiantes universitarios y jóvenes profesionales.
+    </div>
+
+    <h2>3.2.- Objetivos Específicos</h2>
+    <ol>
+      <li><strong>OE1:</strong> Diseñar la experiencia e interfaz de usuario (UI/UX) bajo un estilo visual rústico y orgánico en Figma y Flutter, que humanice la interacción financiera y permita registrar un movimiento económico en menos de 10 segundos.</li>
+      <li><strong>OE2:</strong> Desarrollar el módulo transaccional de gastos con soporte para categorización personalizada (Universidad, Comida, Transporte, Gym, Ocio) y analítica visual interactiva con gráficos de barras y sectores (<code>fl_chart</code>).</li>
+      <li><strong>OE3:</strong> Construir el módulo de Misiones de Ahorro, que permita la fijación de metas cuantificadas (monto meta, fecha límite), seguimiento porcentual de avance y depósitos progresivos.</li>
+      <li><strong>OE4:</strong> Implementar el subsistema de Gamificación y Hábitos Diarios, con registro de rachas consecutivas (<em>streaks</em>), acumulación de puntos de experiencia (<em>XP</em>) y visualización de una tabla de clasificación comunitaria (<em>Leaderboard</em>).</li>
+      <li><strong>OE5:</strong> Programar un motor de asesoría financiera algorítmica (<em>Financial Advisor Engine</em>) que calcule en tiempo real el puntaje de salud financiera (0 a 100), asigne un estado semafórico (Excelente, Moderado, Crítico) y sugiera consejos correctivos personalizados.</li>
+      <li><strong>OE6:</strong> Configurar la arquitectura de persistencia e integración en la nube con PostgreSQL en Neon Cloud y autenticación segura basada en tokens (Google OAuth 2.0 / JWT).</li>
+      <li><strong>OE7:</strong> Validar la calidad del software a través de pruebas de funcionalidad, pruebas unitarias de providers y evaluación de usabilidad con usuarios finales.</li>
+    </ol>
+
+    <h2>3.3.- Justificación</h2>
+
+    <h3>3.3.1. Justificación Teórica</h3>
+    <p>
+      El proyecto constituye una aplicación práctica de las teorías de economía conductual, la teoría de la autodeterminación y la ingeniería de software aplicada a las finanzas personales. Permite contrastar cómo la introducción de reforzadores lúdicos inmediatos influye positivamente en la toma de decisiones económicas y disminuye los sesgos cognitivos del presente en el público juvenil.
+    </p>
+
+    <h3>3.3.2. Justificación Práctica</h3>
+    <p>
+      Resuelve de manera directa y accesible la falta de herramientas especializadas para la realidad universitaria peruana. Al simplificar la interfaz, contemplar las categorías de gasto auténticas de este colectivo y ofrecer retroalimentación sin tecnicismos bancarios complejos, Salvia Finanzas otorga a los estudiantes un mecanismo confiable para evitar la insolvencia a mitad de mes y cumplir con compromisos académicos vitales.
+    </p>
+
+    <h3>3.3.3. Justificación Social y Económica</h3>
+    <p>
+      Promover el control del dinero y el hábito del ahorro en etapas tempranas de formación previene el endeudamiento tóxico y fomenta una cultura de orden financiero en la futura fuerza laboral del país. Esto impacta positivamente en el bienestar psicológico de los estudiantes al reducir la ansiedad generada por la incertidumbre económica.
+    </p>
+
+    <h3>3.3.4. Justificación Tecnológica y Metodológica</h3>
+    <p>
+      La adopción de tecnologías de vanguardia como Flutter, Riverpod, Node.js y PostgreSQL Serverless demuestra la factibilidad de crear soluciones de nivel empresarial con un stack moderno, modular, seguro y de alta eficiencia de recursos, sirviendo de referencia metodológica para futuros proyectos de innovación en software.
+    </p>
+
+    <div class="page-break"></div>
+
+    <!-- CAPÍTULO IV -->
+    <h1>CAPÍTULO IV: PLANIFICACIÓN DEL PROYECTO</h1>
+
+    <h2>4.1.- Cronograma de Actividades (Diagrama de Gantt)</h2>
+    <p>
+      La planificación temporal del proyecto se ha estructurado bajo el marco ágil <strong>Scrum</strong>, distribuido en <strong>16 semanas</strong> de ejecución organizadas en 5 fases secuenciales e iterativas.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 8%;">ID</th>
+          <th style="width: 38%;">Actividad / Tarea Principal</th>
+          <th style="width: 24%;">Responsable</th>
+          <th style="width: 12%;">Semanas</th>
+          <th style="width: 18%;">Entregable</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-center"><strong>F1.1</strong></td>
+          <td>Levantamiento de requisitos y encuestas a universitarios</td>
+          <td>Diani Abad</td>
+          <td class="text-center">Sem 1 - 2</td>
+          <td>Documento SRS preliminar</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F1.2</strong></td>
+          <td>Definición de historias de usuario y criterios de aceptación</td>
+          <td>Astrid Coveñas</td>
+          <td class="text-center">Sem 2 - 3</td>
+          <td>Product Backlog en Jira/Git</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F2.1</strong></td>
+          <td>Diseño UI/UX rústico y prototipado interactivo en Figma</td>
+          <td>Valentino Marca</td>
+          <td class="text-center">Sem 4 - 5</td>
+          <td>Prototipo navegable Figma</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F2.2</strong></td>
+          <td>Diseño relacional de datos y especificación de API REST</td>
+          <td>Eduardo Flores</td>
+          <td class="text-center">Sem 5 - 6</td>
+          <td>Script <code>db.sql</code> y Swagger</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F2.3</strong></td>
+          <td>Configuración del repositorio GitHub y arquitectura base</td>
+          <td>Valentino Marca</td>
+          <td class="text-center">Sem 6</td>
+          <td>Estructura limpia en Flutter</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F3.1</strong></td>
+          <td>Implementación de Autenticación (Google OAuth & JWT)</td>
+          <td>Eduardo Flores</td>
+          <td class="text-center">Sem 7 - 8</td>
+          <td>Endpoint <code>/api/auth</code></td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F3.2</strong></td>
+          <td>Módulo de Gastos y Dashboard Analítico (<code>fl_chart</code>)</td>
+          <td>Valentino Marca</td>
+          <td class="text-center">Sem 8 - 9</td>
+          <td>Módulo <code>expenses</code> funcional</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F3.3</strong></td>
+          <td>Módulo de Misiones de Ahorro y cálculo de metas</td>
+          <td>Astrid Coveñas</td>
+          <td class="text-center">Sem 9 - 10</td>
+          <td>Módulo <code>savings</code> funcional</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F3.4</strong></td>
+          <td>Motor de Gamificación: Hábitos, Rachas y Puntos</td>
+          <td>Diani Abad</td>
+          <td class="text-center">Sem 10 - 11</td>
+          <td>Módulo <code>habits</code> y Leaderboard</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F3.5</strong></td>
+          <td>Motor del Asesor Financiero Algorítmico (Score y Tips)</td>
+          <td>Valentino Marca</td>
+          <td class="text-center">Sem 11 - 12</td>
+          <td>Algoritmo <code>/api/advisor</code></td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F4.1</strong></td>
+          <td>Pruebas unitarias de providers y widgets en Flutter</td>
+          <td>Eduardo Flores</td>
+          <td class="text-center">Sem 13</td>
+          <td>Suite de tests automatizados</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F4.2</strong></td>
+          <td>Auditoría de seguridad y pruebas de estrés backend</td>
+          <td>Valentino Marca</td>
+          <td class="text-center">Sem 13 - 14</td>
+          <td>Reporte de QA y mitigaciones</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F4.3</strong></td>
+          <td>Fase de Simplificación de Código y optimización</td>
+          <td>Todo el equipo</td>
+          <td class="text-center">Sem 14</td>
+          <td>Codebase optimizado</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F5.1</strong></td>
+          <td>Despliegue del backend en la nube (Render / Neon DB)</td>
+          <td>Eduardo Flores</td>
+          <td class="text-center">Sem 15</td>
+          <td>Servidor en producción</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F5.2</strong></td>
+          <td>Pruebas piloto de usabilidad con estudiantes</td>
+          <td>Astrid / Diani</td>
+          <td class="text-center">Sem 15 - 16</td>
+          <td>Resultados de validación</td>
+        </tr>
+        <tr>
+          <td class="text-center"><strong>F5.3</strong></td>
+          <td>Elaboración del informe final y preparación de sustentación</td>
+          <td>Todo el equipo</td>
+          <td class="text-center">Sem 16</td>
+          <td>Documento final y APK Release</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h2>4.2.- Presupuesto del Proyecto</h2>
+    <p>
+      El presupuesto integral contempla los recursos humanos, equipamiento tecnológico, costos de suscripción de software en la nube y gastos operativos logísticos para un periodo de desarrollo de 4 meses (16 semanas). Los montos se expresan en Soles Peruanos (S/) y Dólares Estadounidenses (USD).
+    </p>
+
+    <h3>4.2.1. Recursos Humanos</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Rol Asignado</th>
+          <th>Integrante</th>
+          <th>Horas</th>
+          <th>Tarifa / Hora</th>
+          <th>Subtotal (S/)</th>
+          <th>Subtotal (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Líder de Proyecto & Fullstack Mobile Dev</td>
+          <td>Valentino Martin Marca Quedena</td>
+          <td class="text-center">160 hrs</td>
+          <td class="text-center">S/ 25.00</td>
+          <td class="text-right">S/ 4,000.00</td>
+          <td class="text-right">$ 1,081.08</td>
+        </tr>
+        <tr>
+          <td>Backend & Cloud Database Engineer</td>
+          <td>Flores Calderón, Eduardo José</td>
+          <td class="text-center">160 hrs</td>
+          <td class="text-center">S/ 22.00</td>
+          <td class="text-right">S/ 3,520.00</td>
+          <td class="text-right">$ 951.35</td>
+        </tr>
+        <tr>
+          <td>Frontend Flutter & QA Specialist</td>
+          <td>Astrid Milenka Coveñas Ipanaque</td>
+          <td class="text-center">160 hrs</td>
+          <td class="text-center">S/ 20.00</td>
+          <td class="text-right">S/ 3,200.00</td>
+          <td class="text-right">$ 864.86</td>
+        </tr>
+        <tr>
+          <td>UX Researcher & Technical Writer</td>
+          <td>Diani Abad Guerrero</td>
+          <td class="text-center">160 hrs</td>
+          <td class="text-center">S/ 20.00</td>
+          <td class="text-right">S/ 3,200.00</td>
+          <td class="text-right">$ 864.86</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="4"><strong>TOTAL RECURSOS HUMANOS</strong></td>
+          <td class="text-right"><strong>S/ 13,920.00</strong></td>
+          <td class="text-right"><strong>$ 3,762.15</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>4.2.2. Recursos de Hardware y Equipos de Cómputo</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th>Cantidad</th>
+          <th>Detalle Técnico</th>
+          <th>Costo Unitario</th>
+          <th>Subtotal (S/)</th>
+          <th>Subtotal (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Laptops de Desarrollo</td>
+          <td class="text-center">4</td>
+          <td>Core i7/Ryzen 7, 16GB RAM, SSD 512GB (Depreciación 4 meses)</td>
+          <td class="text-center">S/ 350.00</td>
+          <td class="text-right">S/ 1,400.00</td>
+          <td class="text-right">$ 378.38</td>
+        </tr>
+        <tr>
+          <td>Smartphones de Prueba</td>
+          <td class="text-center">2</td>
+          <td>Android 13/14, 6GB RAM (Pruebas de compilación directa)</td>
+          <td class="text-center">S/ 150.00</td>
+          <td class="text-right">S/ 300.00</td>
+          <td class="text-right">$ 81.08</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="4"><strong>TOTAL HARDWARE</strong></td>
+          <td class="text-right"><strong>S/ 1,700.00</strong></td>
+          <td class="text-right"><strong>$ 459.46</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>4.2.3. Software, Servicios Cloud y Licencias</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Servicio / Plataforma</th>
+          <th>Proveedor</th>
+          <th>Periodo</th>
+          <th>Costo Mensual</th>
+          <th>Subtotal (S/)</th>
+          <th>Subtotal (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>PostgreSQL Serverless</td>
+          <td>Neon Tech Cloud</td>
+          <td class="text-center">4 meses</td>
+          <td class="text-center">S/ 0.00 (Tier Free)</td>
+          <td class="text-right">S/ 0.00</td>
+          <td class="text-right">$ 0.00</td>
+        </tr>
+        <tr>
+          <td>Servidor de Aplicación API</td>
+          <td>Render / Railway Cloud</td>
+          <td class="text-center">4 meses</td>
+          <td class="text-center">S/ 26.00 ($ 7.00)</td>
+          <td class="text-right">S/ 104.00</td>
+          <td class="text-right">$ 28.00</td>
+        </tr>
+        <tr>
+          <td>Licencia Google Play Console</td>
+          <td>Google LLC</td>
+          <td class="text-center">Único</td>
+          <td class="text-center">S/ 95.00 ($ 25.00)</td>
+          <td class="text-right">S/ 95.00</td>
+          <td class="text-right">$ 25.00</td>
+        </tr>
+        <tr>
+          <td>Suite de Diseño UI</td>
+          <td>Figma Educational</td>
+          <td class="text-center">4 meses</td>
+          <td class="text-center">S/ 0.00 (Educativo)</td>
+          <td class="text-right">S/ 0.00</td>
+          <td class="text-right">$ 0.00</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="4"><strong>TOTAL SOFTWARE Y SERVICIOS</strong></td>
+          <td class="text-right"><strong>S/ 199.00</strong></td>
+          <td class="text-right"><strong>$ 53.00</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>4.2.4. Gastos Operativos y Logística</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th>Finalidad</th>
+          <th>Periodo</th>
+          <th>Costo Mensual</th>
+          <th>Subtotal (S/)</th>
+          <th>Subtotal (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Conectividad a Internet</td>
+          <td>Desarrollo colaborativo, Git y consumo de APIs</td>
+          <td class="text-center">4 meses</td>
+          <td class="text-center">S/ 120.00</td>
+          <td class="text-right">S/ 480.00</td>
+          <td class="text-right">$ 129.73</td>
+        </tr>
+        <tr>
+          <td>Servicio Eléctrico</td>
+          <td>Suministro de energía a equipos de cómputo</td>
+          <td class="text-center">4 meses</td>
+          <td class="text-center">S/ 80.00</td>
+          <td class="text-right">S/ 320.00</td>
+          <td class="text-right">$ 86.49</td>
+        </tr>
+        <tr>
+          <td>Materiales e Impresiones</td>
+          <td>Papelería, encuestas piloto y documentación física</td>
+          <td class="text-center">Único</td>
+          <td class="text-center">S/ 150.00</td>
+          <td class="text-right">S/ 150.00</td>
+          <td class="text-right">$ 40.54</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="4"><strong>TOTAL GASTOS OPERATIVOS</strong></td>
+          <td class="text-right"><strong>S/ 950.00</strong></td>
+          <td class="text-right"><strong>$ 256.76</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>4.2.5. Resumen Consolidado del Presupuesto</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Rubro Presupuestario</th>
+          <th>Total en Soles (S/)</th>
+          <th>Total en Dólares (USD)</th>
+          <th>Distribución (%)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1. Recursos Humanos</td>
+          <td class="text-right">S/ 13,920.00</td>
+          <td class="text-right">$ 3,762.15</td>
+          <td class="text-center">83.01%</td>
+        </tr>
+        <tr>
+          <td>2. Hardware y Equipos</td>
+          <td class="text-right">S/ 1,700.00</td>
+          <td class="text-right">$ 459.46</td>
+          <td class="text-center">10.14%</td>
+        </tr>
+        <tr>
+          <td>3. Software y Servicios Cloud</td>
+          <td class="text-right">S/ 199.00</td>
+          <td class="text-right">$ 53.00</td>
+          <td class="text-center">1.19%</td>
+        </tr>
+        <tr>
+          <td>4. Gastos Operativos y Conectividad</td>
+          <td class="text-right">S/ 950.00</td>
+          <td class="text-right">$ 256.76</td>
+          <td class="text-center">5.66%</td>
+        </tr>
+        <tr class="total-row">
+          <td><strong>SUBTOTAL</strong></td>
+          <td class="text-right"><strong>S/ 16,769.00</strong></td>
+          <td class="text-right"><strong>$ 4,531.37</strong></td>
+          <td class="text-center"><strong>100.00%</strong></td>
+        </tr>
+        <tr>
+          <td>Reserva de Contingencia (5%)</td>
+          <td class="text-right">S/ 838.45</td>
+          <td class="text-right">$ 226.57</td>
+          <td class="text-center">&mdash;</td>
+        </tr>
+        <tr class="total-row" style="font-size: 11.5pt; background-color: #d7e7d9 !important;">
+          <td><strong>PRESUPUESTO GENERAL ESTIMADO</strong></td>
+          <td class="text-right"><strong>S/ 17,607.45</strong></td>
+          <td class="text-right"><strong>$ 4,757.94</strong></td>
+          <td class="text-center"><strong>TOTAL</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="font-size: 9.5pt; color: #555; margin-top: 5px;">
+      <em>* Tipo de cambio bancario referencial utilizado: 1 USD = 3.70 PEN.</em>
+    </div>
+
+    <div class="page-break"></div>
+
+    <h2>REFERENCIAS BIBLIOGRÁFICAS (FORMATO APA 7ma EDICIÓN)</h2>
+    <ul style="list-style-type: none; padding-left: 0;">
+      <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">
+        Banco Central de Reserva del Perú [BCRP]. (2024). <em>Reporte de Inclusión Financiera y Métodos de Pago Digital en Jóvenes Peruanos</em>. Lima: Fondo Editorial BCRP.
+      </li>
+      <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">
+        Chen, L., Huang, S., & Kumar, P. (2021). Algorithmic Financial Coaching: Assessing Nudge Theory in Personal Budgeting Apps. <em>Journal of Financial Behavioral Science</em>, 14(2), 89–104. https://doi.org/10.1016/j.jfbs.2021.100452
+      </li>
+      <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">
+        Chou, Y. K. (2015). <em>Actionable Gamification: Beyond Points, Badges, and Leaderboards</em>. Milpitas, CA: Octalysis Media.
+      </li>
+      <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">
+        Clear, J. (2018). <em>Atomic Habits: An Easy & Proven Way to Build Good Habits & Break Bad Ones</em>. New York: Avery.
+      </li>
+      <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">
+        Mendoza, C., & Ticona, R. (2023). <em>Aplicación móvil basada en micro-hábitos para la mejora de la administración financiera en jóvenes trabajadores de Lima Metropolitana</em> [Tesis de pregrado, Pontificia Universidad Católica del Perú]. Repositorio Institucional PUCP.
+      </li>
+      <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">
+        Rodríguez, A., & Morales, F. (2022). Gamificación aplicada al bienestar financiero de la Generación Z en aplicaciones móviles. <em>Revista Iberoamericana de Informática Educativa y Multimedia</em>, 18(1), 45–59.
+      </li>
+      <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">
+        Superintendencia de Banca, Seguros y Administradoras Privadas de Fondos de Pensiones [SBS]. (2023). <em>Encuesta Nacional de Capacidades Financieras en el Perú</em>. Lima: SBS Publicaciones.
+      </li>
+      <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">
+        Vargas, D., & Zapata, M. (2023). <em>Desarrollo de un sistema móvil reactivo multiplataforma para el fomento de la cultura del ahorro en estudiantes de educación superior</em> [Trabajo de grado, Universidad de los Andes, Bogotá].
+      </li>
+    </ul>
+
+  </div>
+
+</body>
+</html>

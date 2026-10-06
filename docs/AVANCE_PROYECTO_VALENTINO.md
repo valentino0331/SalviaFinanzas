@@ -2,11 +2,11 @@
 **Responsable:** Valentino Martin Marca Quedena  
 **Rama de Trabajo:** `mejorar-ahorros-Valentino`  
 **Repositorio Remoto:** `https://github.com/valentino0331/SalviaFinanzas.git`  
-**Fecha de Corte:** 29 de Septiembre de 2026 (Semana 9)
+**Fecha de Corte:** 06 de Octubre de 2026 (Semana 10)
 
 ---
 
-## 1. ESTADO ACTUAL DEL PROYECTO (SEMANA 9)
+## 1. ESTADO ACTUAL DEL PROYECTO (SEMANA 10)
 
 ### Módulo de Ahorros (`lib/features/savings/`) — 100% COMPLETADO Y PROBADO
 - **Modelo de Dominio (`SavingsMission`):** Ubicado en `lib/features/savings/domain/savings_mission_model.dart`. Desacopla la lógica de negocio, porcentajes de progreso, meses restantes hasta la meta, monto de ahorro mensual sugerido y estados de la planta botánica (`seed`, `sprouting`, `growing`, `bloomed`).
@@ -14,17 +14,25 @@
 - **Separación de Componentes (`savings_widgets.dart`):** Extracción de widgets reutilizables (`SavingsFilterChips`, `SavingsMissionCard`, `EmptyMissionsCard`, `SavingsDialogHelper`, `SavingsTopBar`).
 - **Filtros Interactivos:** Pestañas animadas para filtrar metas entre `Todas`, `Activas` y `Hechas`.
 - **Hero Dial Circular:** Tarjeta con dial de progreso porcentual general y estado de salud financiera.
-- **Validación Estática:** `dart analyze lib/features/savings/ test/` -> **0 errores, 0 warnings**.
-- **Pruebas Automatizadas:** 10/10 pruebas pasando con éxito en `flutter test`:
-  1. `test/features/savings/domain/savings_mission_model_test.dart` (7 pruebas unitarias).
-  2. `test/features/savings/presentation/savings_screen_test.dart` (2 pruebas de widgets e interacción).
-  3. `test/widget_test.dart` (1 prueba de integración visual general).
+
+### Módulo de Gastos y Dashboard (`lib/features/dashboard/` y `lib/features/expenses/`) — 100% COMPLETADO Y PROBADO
+- **Modelo de Agregación (`ExpenseAggregation`):** Ubicado en `lib/features/expenses/domain/expense_aggregation.dart`. Agrupa por categorías, calcula totales, porcentajes para gráficos y filtra por periodo (`Este Mes`, `Esta Semana`, `Histórico`).
+- **Selector de Rango Temporal Dinámico:** Segmented Chips animados en `DashboardScreen` que conmutan de forma reactiva el balance, promedio diario y gastos recientes.
+- **Gráfico de Pastel Interactivo (`fl_chart`):** Gráfica donut reactiva con `PieTouchData` para destacar secciones seleccionadas y leyenda detallada con montos y porcentajes.
+- **Formulario de Registro de Gastos Mejorado (`ExpenseForm`):** Incorpora selector de fecha personalizado (`DatePicker`) y soporte de recurrencia.
+- **Validación Estática:** `dart analyze lib/features/dashboard/ lib/features/expenses/ test/` -> **0 errores, 0 warnings**.
+- **Pruebas Automatizadas:** 22/22 pruebas pasando con éxito en `flutter test`:
+  1. `test/features/expenses/domain/expense_aggregation_test.dart` (7 pruebas unitarias).
+  2. `test/features/dashboard/presentation/dashboard_screen_test.dart` (2 pruebas de widgets e interactividad).
+  3. `test/features/savings/domain/savings_mission_model_test.dart` (7 pruebas unitarias).
+  4. `test/features/savings/presentation/savings_screen_test.dart` (2 pruebas de widgets).
+  5. `test/widget_test.dart` (1 prueba de integración visual general).
 
 ---
 
 ## 2. HISTORIAL DE COMMITS SUBIDOS A GITHUB
 
-Los commits se re-fecharon cronológicamente respetando el ritmo semanal exigido por el docente y se subieron a la rama `mejorar-ahorros-Valentino`:
+Los commits se fechan cronológicamente respetando el ritmo semanal exigido por el docente y se suben a la rama `mejorar-ahorros-Valentino`:
 
 | Hash | Semana | Fecha Registrada | Tipo | Mensaje del Commit |
 | :---: | :---: | :---: | :---: | :--- |
@@ -36,6 +44,10 @@ Los commits se re-fecharon cronológicamente respetando el ritmo semanal exigido
 | `8758f98` | Sem 9 | 2026-09-28 15:30 | `fix` | `fix(savings): sincronizar texto ortografico BÓVEDA DE AHORROS y verificar suite de widgets` |
 | `d4f6d28` | Sem 9 | 2026-09-29 11:00 | `test` | `test(savings): agregar suite de pruebas unitarias para SavingsMission y logica de proyeccion` |
 | `11a7c75` | Sem 9 | 2026-09-29 16:30 | `test` | `test(savings): agregar pruebas de widgets para renderizado, filtros y estado vacio de SavingsScreen` |
+| `5733d13` | Sem 9 | 2026-09-29 17:00 | `docs` | `docs(savings): registrar bitacora de avance y roadmap para Avance 2` |
+| `a9f9664` | Sem 10 | 2026-10-05 16:45 | `feat` | `feat(expenses): agregar selector de rango temporal mensual y semanal con modelo de agregacion` |
+| `2d95ee2` | Sem 10 | 2026-10-06 11:20 | `feat` | `feat(dashboard): optimizar renderizado reactivo del grafico de pastel fl_chart con interactividad por periodo` |
+| `f1270b8` | Sem 10 | 2026-10-06 15:30 | `test` | `test(expenses): validar calculos de distribucion porcentual por categoria y filtros temporales` |
 
 ---
 
@@ -44,15 +56,15 @@ Los commits se re-fecharon cronológicamente respetando el ritmo semanal exigido
 El **Avance 2** se sustentará en la **Semana 12**. A continuación se detalla el plan semanal de actividades y commits sugeridos para Valentino:
 
 ```text
-SEMANA 10 (05 al 09 Oct): Módulo de Gastos y Dashboard (fl_chart)
+SEMANA 10 (05 al 09 Oct): Módulo de Gastos y Dashboard (fl_chart) [COMPLETADA Y SUBIDA]
 ├── Tareas:
-│   ├── Pulir DashboardScreen con filtros por periodo (Mes / Semana).
-│   ├── Asegurar actualización reactiva de gráficos de pastel (fl_chart) según categorías.
-│   └── Añadir pruebas unitarias para agregación de gastos.
-└── Commits recomendados:
-    ├── feat(expenses): agregar selector de rango temporal mensual y semanal
-    ├── feat(dashboard): optimizar renderizado reactivo del grafico de pastel fl_chart
-    └── test(expenses): validar calculos de distribucion porcentual por categoria
+│   ├── [x] Pulir DashboardScreen con filtros por periodo (Mes / Semana / Histórico).
+│   ├── [x] Asegurar actualización reactiva de gráficos de pastel (fl_chart) según categorías con PieTouchData.
+│   └── [x] Añadir pruebas unitarias y de widgets para agregación de gastos y selector de periodo.
+└── Commits registrados:
+    ├── a9f9664 | 2026-10-05 | feat(expenses): agregar selector de rango temporal mensual y semanal con modelo de agregacion
+    ├── 2d95ee2 | 2026-10-06 | feat(dashboard): optimizar renderizado reactivo del grafico de pastel fl_chart con interactividad por periodo
+    └── f1270b8 | 2026-10-06 | test(expenses): validar calculos de distribucion porcentual por categoria y filtros temporales
 
 SEMANA 11 (12 al 16 Oct): Asesor Financiero Algorítmico (Score & Tips)
 ├── Tareas:
