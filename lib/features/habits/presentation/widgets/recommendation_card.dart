@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../domain/habit_template.dart';
+
 class RecommendationCard extends StatelessWidget {
   const RecommendationCard({
     super.key,
@@ -8,7 +10,7 @@ class RecommendationCard extends StatelessWidget {
     this.onAdopt,
   });
 
-  final Map<String, dynamic> template;
+  final HabitTemplate template;
   final VoidCallback? onAdopt;
 
   @override
@@ -37,7 +39,7 @@ class RecommendationCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  template['title'],
+                  template.title,
                   style: GoogleFonts.outfit(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -46,7 +48,7 @@ class RecommendationCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "${template['description']} • +${template['points_reward']} pts",
+                  "${template.description} • +${template.pointsReward} pts",
                   style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF7A8B7E)),
                 ),
               ],
