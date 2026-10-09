@@ -83,7 +83,7 @@ class HabitsScreen extends ConsumerWidget {
                         ),
                       ),
                       TextButton.icon(
-                        onPressed: () => showAddHabitDialog(context, ref),
+                        onPressed: () => showAddHabitDialog(context),
                         icon: const Icon(Icons.add, size: 16),
                         label: Text(
                           "Crear Hábito",
