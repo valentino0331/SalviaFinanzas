@@ -229,16 +229,14 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
   }
 
   Future<void> addHabit(String title, String description, int pointsReward) async {
-    try {
-      final newHabit = await ApiService.addHabit({
-        'title': title,
-        'description': description,
-        'points_reward': pointsReward,
-      });
-      state.whenData((list) {
-        state = AsyncValue.data([...list, newHabit]);
-      });
-    } catch (_) {}
+    final newHabit = await ApiService.addHabit({
+      'title': title,
+      'description': description,
+      'points_reward': pointsReward,
+    });
+    state.whenData((list) {
+      state = AsyncValue.data([...list, newHabit]);
+    });
   }
 
   Future<int> completeHabit(int id) async {
