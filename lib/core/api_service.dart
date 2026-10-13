@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../features/advisor/domain/financial_health_engine.dart';
 
 class ApiService {
   // Cambia esto por tu URL de Render en producción.
@@ -390,75 +391,18 @@ class ApiService {
   // ASESOR FINANCIERO
   static Future<Map<String, dynamic>> getFinancialAdvisorReport() async {
     if (_isOfflineMode) {
-      // Simular cálculo de diagnóstico
+      final user = _localDb['user'] as Map<String, dynamic>?;
+      final income = double.tryParse(user?['monthly_income']?.toString() ?? '2000') ?? 2000.0;
       final expenses = _localDb['expenses'] as List<dynamic>;
-      final missions = (_localDb['savings'] as List<dynamic>).where((m) => m['is_completed'] == false).toList();
-      
-      final oneMonthAgo = DateTime.now().subtract(const Duration(days: 30));
-      final recentExpenses = expenses.where((e) => DateTime.parse(e['date']).isAfter(oneMonthAgo)).toList();
-      
-      double totalSpent = recentExpenses.fold(0.0, (acc, e) => acc + double.parse(e['amount'].toString()));
-      
-      Map<String, double> catSummary = {};
-      for (var e in recentExpenses) {
-        final cat = e['category'];
-        catSummary[cat] = (catSummary[cat] ?? 0.0) + double.parse(e['amount'].toString());
-      }
+      final missions = _localDb['savings'] as List<dynamic>;
 
-      int score = 100;
-      List<String> tips = [];
+      final report = FinancialHealthEngine.calculate(
+        monthlyIncome: income,
+        expenses: expenses,
+        savingsMissions: missions,
+      );
 
-      final double foodSpent = catSummary['Comida'] ?? 0.0;
-      final double leisureSpent = catSummary['Ocio'] ?? 0.0;
-      const double budget = 1500.0;
-
-      if (totalSpent > budget) {
-        score -= 30;
-        tips.add("Has superado tu límite sugerido de S/. 1,500. Intenta aplazar compras no urgentes.");
-      } else if (totalSpent > budget * 0.75) {
-        score -= 15;
-        tips.add("Estás por alcanzar el 80% de tu presupuesto de tranquilidad en Soles. Revisa el detalle de tus gastos.");
-      }
-
-      if (leisureSpent > budget * 0.20) {
-        score -= 15;
-        tips.add("Tus gastos en Ocio (S/. ${leisureSpent.toStringAsFixed(2)}) superan el 20% recomendado. ¡Aquí tienes oportunidad de ahorrar!");
-      }
-
-      if (foodSpent > budget * 0.35) {
-        score -= 10;
-        tips.add("Has gastado bastante comiendo fuera (S/. ${foodSpent.toStringAsFixed(2)}). Preparar más almuerzos en casa (ej. pollo) te ahorraría unos S/. 120 al mes.");
-      }
-
-      if (missions.isNotEmpty) {
-        final mainMission = missions.first;
-        final double missing = double.parse(mainMission['target_amount'].toString()) - double.parse(mainMission['current_amount'].toString());
-        if (leisureSpent > 0) {
-          final potential = (leisureSpent * 0.5 < missing) ? leisureSpent * 0.5 : missing;
-          tips.add("💡 Consejo Salvia: Si recortas el 50% de tus compras en Ocio de este mes, acelerarás tu meta '${mainMission['title']}' sumándole S/. ${potential.toStringAsFixed(2)}.");
-        }
-      } else {
-        tips.add("Aún no tienes misiones de ahorro activas. Añade una para dar dirección y propósito a tus finanzas.");
-      }
-
-      String status = "Excelente";
-      if (score < 60) {
-        status = "Crítico";
-      } else if (score < 85) {
-        status = "Moderado";
-      }
-
-      if (tips.isEmpty) {
-        tips.add("¡Tus finanzas están en un estado óptimo! Continúa registrando tus gastos y manteniendo tus buenos hábitos.");
-      }
-
-      return {
-        'score': score,
-        'status': status,
-        'total_spent_30_days': totalSpent,
-        'category_summary': catSummary,
-        'tips': tips
-      };
+      return report.toMap();
     }
 
     final res = await http.get(Uri.parse('$baseUrl/financial-advisor'), headers: _headers);
