@@ -84,7 +84,10 @@ class ApiService {
       'monthly_income': monthlyIncome ?? 1500.00,
     };
 
-    if (_isOfflineMode) {
+    final isLocalUser = id.startsWith('offline_user_');
+
+    if (_isOfflineMode || isLocalUser) {
+      _isOfflineMode = true;
       _token = id;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', id);
@@ -97,21 +100,36 @@ class ApiService {
       return _localDb['user'];
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/auth/google'),
-      headers: _headers,
-      body: jsonEncode(data),
-    );
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/auth/google'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ).timeout(const Duration(seconds: 4));
 
-    if (res.statusCode == 200) {
-      final body = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        _token = id;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', id);
+        return body;
+      }
+    } catch (e) {
+      print("Aviso: Conexión al servidor falló ($e). Conmutando automáticamente a modo Offline local 🌿");
+      _isOfflineMode = true;
       _token = id;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', id);
-      return body;
-    } else {
-      throw Exception("Error al autenticar: ${res.body}");
+      _localDb['user']['id'] = id;
+      _localDb['user']['name'] = name;
+      _localDb['user']['email'] = email;
+      _localDb['user']['avatar_url'] = avatarUrl ?? 'https://api.dicebear.com/7.x/bottts/png?seed=$name';
+      _localDb['user']['monthly_income'] = monthlyIncome ?? 1500.00;
+      await _saveLocalDb();
+      return _localDb['user'];
     }
+
+    throw Exception("Error al autenticar");
   }
 
   static Future<void> logout() async {
@@ -142,14 +160,21 @@ class ApiService {
       return _localDb['user'];
     }
 
-    final res = await http.put(
-      Uri.parse('$baseUrl/user/income'),
-      headers: _headers,
-      body: jsonEncode({'monthly_income': income}),
-    );
+    try {
+      final res = await http.put(
+        Uri.parse('$baseUrl/user/income'),
+        headers: _headers,
+        body: jsonEncode({'monthly_income': income}),
+      ).timeout(const Duration(seconds: 4));
 
-    if (res.statusCode == 200) {
-      return jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (_) {
+      _isOfflineMode = true;
+      _localDb['user']['monthly_income'] = income;
+      await _saveLocalDb();
+      return _localDb['user'];
     }
     throw Exception("Error al actualizar ingresos");
   }
@@ -162,9 +187,17 @@ class ApiService {
       if (!completed) return null;
       return _localDb['user'];
     }
-    final res = await http.get(Uri.parse('$baseUrl/user/profile'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
-    throw Exception("Error al cargar perfil");
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/user/profile'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      final prefs = await SharedPreferences.getInstance();
+      final completed = prefs.getBool('onboarding_completed') ?? false;
+      if (!completed) return null;
+      return _localDb['user'];
+    }
+    return null;
   }
 
   // GASTOS
@@ -174,8 +207,15 @@ class ApiService {
       list.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
       return list;
     }
-    final res = await http.get(Uri.parse('$baseUrl/expenses'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/expenses'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      List<dynamic> list = List.from(_localDb['expenses']);
+      list.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+      return list;
+    }
     throw Exception("Error al cargar gastos");
   }
 
@@ -196,12 +236,17 @@ class ApiService {
       return newExp;
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/expenses'),
-      headers: _headers,
-      body: jsonEncode(expense),
-    );
-    if (res.statusCode == 201) return jsonDecode(res.body);
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/expenses'),
+        headers: _headers,
+        body: jsonEncode(expense),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 201) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return addExpense(expense);
+    }
     throw Exception("Error al agregar gasto");
   }
 
@@ -211,8 +256,14 @@ class ApiService {
       await _saveLocalDb();
       return;
     }
-    final res = await http.delete(Uri.parse('$baseUrl/expenses/$id'), headers: _headers);
-    if (res.statusCode != 200) throw Exception("Error al borrar gasto");
+    try {
+      final res = await http.delete(Uri.parse('$baseUrl/expenses/$id'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode != 200) throw Exception("Error al borrar gasto");
+    } catch (_) {
+      _isOfflineMode = true;
+      _localDb['expenses'].removeWhere((e) => e['id'] == id);
+      await _saveLocalDb();
+    }
   }
 
   // MISIONES DE AHORRO
@@ -220,8 +271,13 @@ class ApiService {
     if (_isOfflineMode) {
       return List.from(_localDb['savings']);
     }
-    final res = await http.get(Uri.parse('$baseUrl/savings-missions'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/savings-missions'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return List.from(_localDb['savings']);
+    }
     throw Exception("Error al cargar misiones");
   }
 
@@ -245,12 +301,17 @@ class ApiService {
       return newMission;
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/savings-missions'),
-      headers: _headers,
-      body: jsonEncode(mission),
-    );
-    if (res.statusCode == 201) return jsonDecode(res.body);
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/savings-missions'),
+        headers: _headers,
+        body: jsonEncode(mission),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 201) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return addSavingsMission(mission);
+    }
     throw Exception("Error al agregar misión");
   }
 
@@ -274,12 +335,17 @@ class ApiService {
       };
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/savings-missions/$id/save'),
-      headers: _headers,
-      body: jsonEncode({'amount': amount}),
-    );
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/savings-missions/$id/save'),
+        headers: _headers,
+        body: jsonEncode({'amount': amount}),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return saveToMission(id, amount);
+    }
     throw Exception("Error al ahorrar en la misión");
   }
 
@@ -290,9 +356,13 @@ class ApiService {
       return;
     }
     try {
-      final res = await http.delete(Uri.parse('$baseUrl/savings-missions/$id'), headers: _headers);
+      final res = await http.delete(Uri.parse('$baseUrl/savings-missions/$id'), headers: _headers).timeout(const Duration(seconds: 4));
       if (res.statusCode != 200 && res.statusCode != 204) throw Exception("Error al borrar misión");
-    } catch (_) {}
+    } catch (_) {
+      _isOfflineMode = true;
+      _localDb['savings'].removeWhere((m) => m['id'] == id);
+      await _saveLocalDb();
+    }
   }
 
   // HÁBITOS
@@ -300,8 +370,13 @@ class ApiService {
     if (_isOfflineMode) {
       return List.from(_localDb['habits']);
     }
-    final res = await http.get(Uri.parse('$baseUrl/habits'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/habits'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return List.from(_localDb['habits']);
+    }
     throw Exception("Error al cargar hábitos");
   }
 
@@ -321,12 +396,17 @@ class ApiService {
       return newHabit;
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/habits'),
-      headers: _headers,
-      body: jsonEncode(habit),
-    );
-    if (res.statusCode == 201) return jsonDecode(res.body);
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/habits'),
+        headers: _headers,
+        body: jsonEncode(habit),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 201) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return addHabit(habit);
+    }
     throw Exception("Error al agregar hábito");
   }
 
@@ -361,13 +441,17 @@ class ApiService {
       };
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/habits/$id/complete'),
-      headers: _headers,
-    );
-    if (res.statusCode == 200) return jsonDecode(res.body);
-    final error = jsonDecode(res.body);
-    throw Exception(error['error'] ?? "Error al completar hábito");
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/habits/$id/complete'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return completeHabit(id);
+    }
+    throw Exception("Error al completar hábito");
   }
 
   // TABLA DE CLASIFICACIÓN
@@ -383,8 +467,13 @@ class ApiService {
       return list;
     }
 
-    final res = await http.get(Uri.parse('$baseUrl/leaderboard'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/leaderboard'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return getLeaderboard();
+    }
     throw Exception("Error al cargar tabla de clasificación");
   }
 
@@ -405,8 +494,13 @@ class ApiService {
       return report.toMap();
     }
 
-    final res = await http.get(Uri.parse('$baseUrl/financial-advisor'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/financial-advisor'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return getFinancialAdvisorReport();
+    }
     throw Exception("Error al cargar reporte de asesor");
   }
 }
