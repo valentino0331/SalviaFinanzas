@@ -14,16 +14,107 @@ class ApiService {
   static final Map<String, dynamic> _localDb = {
     'user': {
       'id': 'google_mock_123',
-      'email': 'marca@example.com',
-      'name': 'Marcio A.',
-      'avatar_url': 'https://api.dicebear.com/7.x/bottts/png?seed=Marcio',
-      'points': 0,
-      'streak': 0,
-      'monthly_income': 2000.00,
+      'email': 'valentino@salvia.local',
+      'name': 'Valentino Marca',
+      'avatar_url': 'https://api.dicebear.com/7.x/bottts/png?seed=Valentino',
+      'points': 450,
+      'streak': 12,
+      'monthly_income': 2200.00,
     },
-    'expenses': [],
-    'savings': [],
-    'habits': []
+    'expenses': [
+      {
+        'id': 1,
+        'user_id': 'google_mock_123',
+        'amount': 450.00,
+        'category': 'Universidad',
+        'subcategory': 'pension',
+        'description': 'Cuota universitaria del mes',
+        'date': '2026-10-14T10:00:00.000Z',
+        'recurrence': 'monthly'
+      },
+      {
+        'id': 2,
+        'user_id': 'google_mock_123',
+        'amount': 180.00,
+        'category': 'Comida',
+        'subcategory': 'supermercado',
+        'description': 'Compras de despensa semanal',
+        'date': '2026-10-15T14:30:00.000Z',
+        'recurrence': 'once'
+      },
+      {
+        'id': 3,
+        'user_id': 'google_mock_123',
+        'amount': 75.00,
+        'category': 'Transporte',
+        'subcategory': 'metropolitano',
+        'description': 'Recarga de tarjeta de pasajes',
+        'date': '2026-10-16T08:15:00.000Z',
+        'recurrence': 'once'
+      },
+      {
+        'id': 4,
+        'user_id': 'google_mock_123',
+        'amount': 95.00,
+        'category': 'Ocio',
+        'subcategory': 'cine',
+        'description': 'Salida recreativa con amigos',
+        'date': '2026-10-17T19:00:00.000Z',
+        'recurrence': 'once'
+      }
+    ],
+    'savings': [
+      {
+        'id': 1,
+        'user_id': 'google_mock_123',
+        'title': 'Pagar Ciclo Universidad',
+        'target_amount': 1500.00,
+        'current_amount': 1050.00,
+        'deadline': '2026-12-15',
+        'icon_name': 'school',
+        'is_completed': false,
+      },
+      {
+        'id': 2,
+        'user_id': 'google_mock_123',
+        'title': 'Fondo de Emergencia Estudiantil',
+        'target_amount': 800.00,
+        'current_amount': 800.00,
+        'deadline': '2026-11-30',
+        'icon_name': 'savings',
+        'is_completed': true,
+      },
+      {
+        'id': 3,
+        'user_id': 'google_mock_123',
+        'title': 'Viaje a Cusco en Vacaciones',
+        'target_amount': 1200.00,
+        'current_amount': 360.00,
+        'deadline': '2027-02-28',
+        'icon_name': 'flight',
+        'is_completed': false,
+      }
+    ],
+    'habits': [
+      {
+        'id': 1,
+        'user_id': 'google_mock_123',
+        'title': 'Registrar gastos diarios',
+        'description': 'Anotar cada compra para mantener el control',
+        'points_reward': 15,
+        'streak': 12,
+        'last_completed_at': '2026-10-19',
+      },
+      {
+        'id': 2,
+        'user_id': 'google_mock_123',
+        'title': 'Ahorro hormiga del día',
+        'description': 'Guardar al menos S/ 5 en la alcancía',
+        'points_reward': 20,
+        'streak': 8,
+        'last_completed_at': '2026-10-18',
+      }
+    ]
   };
 
   static Future<void> _saveLocalDb() async {
@@ -183,7 +274,7 @@ class ApiService {
   static Future<Map<String, dynamic>?> getProfile() async {
     if (_isOfflineMode) {
       final prefs = await SharedPreferences.getInstance();
-      final completed = prefs.getBool('onboarding_completed') ?? false;
+      final completed = prefs.getBool('onboarding_completed') ?? true;
       if (!completed) return null;
       return _localDb['user'];
     }
@@ -193,7 +284,7 @@ class ApiService {
     } catch (_) {
       _isOfflineMode = true;
       final prefs = await SharedPreferences.getInstance();
-      final completed = prefs.getBool('onboarding_completed') ?? false;
+      final completed = prefs.getBool('onboarding_completed') ?? true;
       if (!completed) return null;
       return _localDb['user'];
     }

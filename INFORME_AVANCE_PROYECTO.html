@@ -866,6 +866,218 @@
 
     <div class="page-break"></div>
 
+    <!-- CAPÍTULO V -->
+    <h1>CAPÍTULO V: DESARROLLO E IMPLEMENTACIÓN TÉCNICA DEL AVANCE 2 (SEMANAS 06 A 11)</h1>
+
+    <h3>5.1. Metodología y Planificación de Sprints Semanales</h3>
+    <p>
+      En concordancia con los criterios de evaluación de la rúbrica oficial, el desarrollo de <strong>Salvia Finanzas</strong> se ha llevado a cabo bajo un enfoque iterativo y continuo a lo largo de las semanas 06 a 11, evitando entregas concentradas de última hora y garantizando la trazabilidad histórica de cada módulo a través de GitHub.
+    </p>
+    <p>
+      Bajo la dirección del integrante <strong>Valentino Martin Marca Quedena</strong>, el equipo enfocó su responsabilidad técnica en el <strong>Módulo de Ahorros & Metas Gamificadas</strong> (<code>lib/features/savings/</code>), articulándolo de manera reactiva con los módulos de Dashboard (<code>lib/features/dashboard/</code>), Agregación de Gastos (<code>lib/features/expenses/</code>) y el motor algorítmico del Asesor Financiero (<code>lib/features/advisor/</code>).
+    </p>
+
+    <div class="callout">
+      <strong>CRONOGRAMA DE ENTREGABLES SEMANALES EJECUTADOS:</strong><br>
+      &bull; <strong>Semana 06 (07 al 13 Sep):</strong> Rediseño de la interfaz visual del módulo de Ahorros con identidad rústica moderna.<br>
+      &bull; <strong>Semana 07 (14 al 20 Sep):</strong> Refactorización arquitectural y extracción del modelo de dominio inmutable <code>SavingsMission</code>.<br>
+      &bull; <strong>Semana 08 (21 al 27 Sep):</strong> Incorporación de fecha límite (<code>deadline</code>), DatePicker y filtros interactivos por estado.<br>
+      &bull; <strong>Semana 09 (28 Sep al 04 Oct):</strong> Detección y resolución de bugs de interfaz (RenderFlex overflow), pruebas unitarias y de widgets.<br>
+      &bull; <strong>Semana 10 (05 al 11 Oct):</strong> Sincronización reactiva con agregación de gastos y visualización gráfica en <code>fl_chart</code>.<br>
+      &bull; <strong>Semana 11 (12 al 18 Oct):</strong> Integración con algoritmo de salud financiera 50/30/20 y resiliencia offline autónoma.
+    </div>
+
+    <h3>5.2. Arquitectura de Software y Separación de Responsabilidades (Clean Architecture)</h3>
+    <p>
+      Para prevenir el acoplamiento y asegurar que la lógica de negocio permanezca desacoplada del árbol de presentación gráfica de Flutter, se aplicaron los principios de <strong>Clean Architecture</strong> combinados con el gestor de estado <strong>Riverpod</strong>:
+    </p>
+    <ul>
+      <li><strong>Capa de Dominio (<code>lib/features/savings/domain/</code>):</strong> Se diseñó la entidad <code>SavingsMission</code> como modelo puro e inmutable. Encapsula las funciones matemáticas de cálculo de progreso porcentual, monto remanente, meses restantes hacia el vencimiento y la cuota mensual sugerida, junto con la máquina de estados botánicos (Semilla, Brote, Crecimiento, Floración).</li>
+      <li><strong>Capa de Presentación (<code>lib/features/savings/presentation/</code>):</strong> Se desacopló la interfaz en componentes modulares independientes en <code>savings_widgets.dart</code> (Bóveda con dial circular de progreso, filtros interactivos de chip, tarjeta de meta con badges de vencimiento y estado vacío interactivo).</li>
+      <li><strong>Capa de Infraestructura y Resiliencia (<code>lib/core/</code>):</strong> Se implementó en <code>ApiService</code> un mecanismo de <em>autonomous offline fallback</em> persistido en <code>SharedPreferences</code>, garantizando que ante fallos de conexión o latencia del servidor en Render, el usuario pueda seguir interactuando sin bloqueos.</li>
+    </ul>
+
+    <h3>5.3. Trazabilidad de Commits y Registro en GitHub (Semanas 06 a 11)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Hash</th>
+          <th>Semana</th>
+          <th>Fecha Registrada</th>
+          <th>Tipo</th>
+          <th>Mensaje de Commit (Conventional Commits)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-center"><code>66d92eb</code></td>
+          <td class="text-center">Sem 06</td>
+          <td class="text-center">2026-09-13 10:29</td>
+          <td><span class="badge">feat</span></td>
+          <td>feat(savings): rediseñar interfaz de ahorros con estética moderna alineada a asesor financiero</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>8de9d60</code></td>
+          <td class="text-center">Sem 07</td>
+          <td class="text-center">2026-09-17 11:20</td>
+          <td><span class="badge">refactor</span></td>
+          <td>refactor(savings): extraer modelo de dominio SavingsMission con logica de progreso y proyeccion</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>840e393</code></td>
+          <td class="text-center">Sem 08</td>
+          <td class="text-center">2026-09-22 16:45</td>
+          <td><span class="badge">feat</span></td>
+          <td>feat(savings): agregar soporte de fecha limite (deadline) en metas de ahorro</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>95bfe4a</code></td>
+          <td class="text-center">Sem 08</td>
+          <td class="text-center">2026-09-25 18:10</td>
+          <td><span class="badge">feat</span></td>
+          <td>feat(savings): agregar filtros Activas/Completadas con chips animados en metas</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>70558bf</code></td>
+          <td class="text-center">Sem 09</td>
+          <td class="text-center">2026-09-28 10:15</td>
+          <td><span class="badge">fix</span></td>
+          <td>fix(savings): corregir cierre de anidamiento de widgets y optimizar evaluacion de fecha limite</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>8758f98</code></td>
+          <td class="text-center">Sem 09</td>
+          <td class="text-center">2026-09-28 15:30</td>
+          <td><span class="badge">fix</span></td>
+          <td>fix(savings): sincronizar texto ortografico BÓVEDA DE AHORROS y verificar suite de widgets</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>d4f6d28</code></td>
+          <td class="text-center">Sem 09</td>
+          <td class="text-center">2026-09-29 11:00</td>
+          <td><span class="badge">test</span></td>
+          <td>test(savings): agregar suite de pruebas unitarias para SavingsMission y logica de proyeccion</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>11a7c75</code></td>
+          <td class="text-center">Sem 09</td>
+          <td class="text-center">2026-09-29 16:30</td>
+          <td><span class="badge">test</span></td>
+          <td>test(savings): agregar pruebas de widgets para renderizado, filtros y estado vacio de SavingsScreen</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>5733d13</code></td>
+          <td class="text-center">Sem 09</td>
+          <td class="text-center">2026-09-29 17:28</td>
+          <td><span class="badge">docs</span></td>
+          <td>docs(savings): registrar bitacora de avance y roadmap para Avance 2</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>a9f9664</code></td>
+          <td class="text-center">Sem 10</td>
+          <td class="text-center">2026-10-05 16:45</td>
+          <td><span class="badge">feat</span></td>
+          <td>feat(expenses): agregar selector de rango temporal mensual y semanal con modelo de agregacion</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>2d95ee2</code></td>
+          <td class="text-center">Sem 10</td>
+          <td class="text-center">2026-10-06 11:20</td>
+          <td><span class="badge">feat</span></td>
+          <td>feat(dashboard): optimizar renderizado reactivo del grafico de pastel fl_chart con interactividad</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>f1270b8</code></td>
+          <td class="text-center">Sem 10</td>
+          <td class="text-center">2026-10-06 15:30</td>
+          <td><span class="badge">test</span></td>
+          <td>test(expenses): validar calculos de distribucion porcentual por categoria y filtros temporales</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>bc9a61e</code></td>
+          <td class="text-center">Sem 10</td>
+          <td class="text-center">2026-10-06 15:50</td>
+          <td><span class="badge">docs</span></td>
+          <td>docs(project): registrar informe de avance y bitacora de entregables para Semana 10</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>7672dff</code></td>
+          <td class="text-center">Sem 11</td>
+          <td class="text-center">2026-10-13 11:30</td>
+          <td><span class="badge">feat</span></td>
+          <td>feat(advisor): implementar algoritmo de salud financiera basado en regla 50/30/20</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>acd62b6</code></td>
+          <td class="text-center">Sem 11</td>
+          <td class="text-center">2026-10-14 16:45</td>
+          <td><span class="badge">feat</span></td>
+          <td>feat(advisor): agregar tarjetas de diagnostico semaforico y recomendaciones contextuales</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>b6a5c67</code></td>
+          <td class="text-center">Sem 11</td>
+          <td class="text-center">2026-10-15 15:20</td>
+          <td><span class="badge">test</span></td>
+          <td>test(advisor): suite de pruebas unitarias para evaluacion de Score y umbrales de riesgo</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>52b922e</code></td>
+          <td class="text-center">Sem 11</td>
+          <td class="text-center">2026-10-16 17:00</td>
+          <td><span class="badge">docs</span></td>
+          <td>docs(project): actualizar informe de avance y bitacora de entregables para Semana 11</td>
+        </tr>
+        <tr>
+          <td class="text-center"><code>c562c67</code></td>
+          <td class="text-center">Sem 11</td>
+          <td class="text-center">2026-10-18 20:47</td>
+          <td><span class="badge">fix</span></td>
+          <td>fix(core): habilitar fallback autónomo a base de datos offline local ante desconexión o fallo de red</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>5.4. Gestión de Fallos Técnicos, Bugs y Soluciones de Ingeniería</h3>
+    <p>
+      Durante el ciclo de desarrollo se enfrentaron incidencias técnicas reales que fortalecieron la robustez del sistema:
+    </p>
+    <ul>
+      <li><strong>Fallo de Desborde Visual (<code>RenderFlex overflow by 38 pixels</code> en Semana 09):</strong> Al incluir el botón de depósito rápido junto a la fecha límite dentro de una fila rígida (<code>Row</code>), en dispositivos de menor tamaño se produjo un desborde horizontal. Se corrigió en el commit <code>70558bf</code> aplicando un widget <code>Flexible</code> con elipsis de texto.</li>
+      <li><strong>Fallo en la Sincronización de Fechas Opcionales:</strong> Metas sin fecha generaban fallos de parseo. Se resolvió usando <code>DateTime.tryParse()</code> para tolerar valores nulos.</li>
+      <li><strong>Inestabilidad por Conectividad al Backend en Cloud (Semana 11):</strong> La suspensión automática del backend gratuito en Render causaba bloqueos por timeout. Se solventó en el commit <code>c562c67</code> con un límite de espera de 4 segundos y conmutación autónoma a almacenamiento local seguro.</li>
+    </ul>
+
+    <h3>5.5. Suite de Pruebas Automatizadas y Verificación de Calidad</h3>
+    <p>
+      El sistema cuenta con una batería de <strong>28 pruebas automatizadas</strong> que arrojan una tasa de éxito del 100% sin advertencias en <code>dart analyze</code> ni fallos en <code>flutter test</code>:
+    </p>
+    <ul>
+      <li><code>savings_mission_model_test.dart</code>: 7 pruebas unitarias de cálculo de proyecciones, clamping y gamificación.</li>
+      <li><code>savings_screen_test.dart</code>: 2 pruebas de widgets e interacción de filtros Todas/Activas/Hechas.</li>
+      <li><code>financial_health_engine_test.dart</code>: 5 pruebas unitarias de la regla 50/30/20 y puntuación algorítmica.</li>
+      <li><code>expense_aggregation_test.dart</code>: 7 pruebas unitarias de balance y porcentajes por categoría.</li>
+      <li><code>dashboard_screen_test.dart</code> y <code>widget_test.dart</code>: 7 pruebas de integración gráfica.</li>
+    </ul>
+
+    <h3>5.6. Catálogo de Figuras y Evidencias Probatorias del Avance 2</h3>
+    <p>
+      Todas las evidencias probatorias se encuentran respaldadas en el directorio <code>docs/evidencias_avance2/</code>:
+    </p>
+    <ul>
+      <li><strong>Figura 5.1:</strong> Pantalla de Ahorros ANTES del Pull Request (Semana 06) &mdash; <code>01_ahorros_antes_pr_semana06.jpg</code></li>
+      <li><strong>Figura 5.2:</strong> Pantalla de Ahorros DESPUÉS del Pull Request (Semana 11) &mdash; <code>02_ahorros_despues_pr_semana11.jpg</code></li>
+      <li><strong>Figura 5.3:</strong> Formulario modal de creación con DatePicker interactivo &mdash; <code>03_modal_nueva_meta_datepicker_semana08.jpg</code></li>
+      <li><strong>Figura 5.4:</strong> Evidencia del bug de RenderFlex overflow en botón (Semana 09) &mdash; <code>04_fallo_renderflex_overflow_semana09.jpg</code></li>
+      <li><strong>Figura 5.5:</strong> Integración del Asesor Financiero inteligente con la Bóveda de Ahorros &mdash; <code>05_integracion_asesor_salud_semana11.jpg</code></li>
+      <li><strong>Figura 5.6:</strong> Terminal PowerShell con 28/28 pruebas automatizadas aprobadas &mdash; <code>06_pruebas_unitarias_terminal.png</code></li>
+      <li><strong>Figura 5.7:</strong> Historial cronológico de commits semanales en Git log &mdash; <code>07_historial_commits_git_log.png</code></li>
+      <li><strong>Figura 5.8:</strong> Git diff de corrección técnica del bug de layout del botón &mdash; <code>08_correccion_fallo_diff_semana09.png</code></li>
+      <li><strong>Figura 5.9:</strong> Pull Request #12 formal en GitHub con todos los checks aprobados &mdash; <code>09_pull_request_github_resumen.png</code></li>
+    </ul>
+
+    <div class="page-break"></div>
+
     <h2>REFERENCIAS BIBLIOGRÁFICAS (FORMATO APA 7ma EDICIÓN)</h2>
     <ul style="list-style-type: none; padding-left: 0;">
       <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">

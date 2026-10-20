@@ -252,6 +252,144 @@ El presupuesto se ha elaborado considerando los estándares de costeo para proye
 
 *(Tipo de cambio referencial estimado: 1 USD = 3.70 PEN)*
 
+
+---
+
+# CAPÍTULO V: DESARROLLO E IMPLEMENTACIÓN TÉCNICA DEL AVANCE 2 (SEMANAS 06 A 11)
+
+## 5.1. Metodología y Planificación de Sprints Semanales
+En conformidad con las directrices de la rúbrica del curso, el desarrollo de la solución móvil se ha ejecutado de manera iterativa y progresiva a lo largo de las semanas 06 a 11, evitando entregas concentradas de última hora y garantizando una trazabilidad rigurosa mediante control de versiones en Git y GitHub.
+
+Bajo la responsabilidad de **Valentino Martin Marca Quedena**, el equipo concentró sus esfuerzos en el diseño, arquitectura, validación y aseguramiento de la calidad del **Módulo de Ahorros & Metas Gamificadas** (`lib/features/savings/`), articulándolo de forma transversal con el módulo de Dashboard (`lib/features/dashboard/`), el motor de Agregación de Gastos (`lib/features/expenses/`) y el módulo de Asesoría Financiera Algorítmica (`lib/features/advisor/`).
+
+```text
+CRONOGRAMA DE ENTREGABLES SEMANALES EJECUTADOS:
+├── Semana 06 (07 al 13 Sep): Rediseño visual del módulo de Ahorros e identidad rústica moderna.
+├── Semana 07 (14 al 20 Sep): Refactorización estructural y extracción del modelo de dominio SavingsMission.
+├── Semana 08 (21 al 27 Sep): Incorporación de fecha límite (deadline), DatePicker y filtros interactivos.
+├── Semana 09 (28 Sep al 04 Oct): Depuración de bugs de interfaz (RenderFlex overflow), pruebas unitarias y de widgets.
+├── Semana 10 (05 al 11 Oct): Sincronización reactiva con agregación de gastos y gráficos pastel fl_chart.
+└── Semana 11 (12 al 18 Oct): Integración del algoritmo de salud financiera 50/30/20 y resiliencia offline autónoma.
+```
+
+---
+
+## 5.2. Arquitectura de Software y Separación de Capas (Clean Architecture)
+Para asegurar la mantenibilidad, escalabilidad y testabilidad del sistema, se aplicaron patrones de **Arquitectura Limpia (Clean Architecture)** y gestión de estado inmutable con **Flutter Riverpod**:
+
+1. **Capa de Dominio (`lib/features/savings/domain/`):**
+   - **`SavingsMission`:** Entidad pura de negocio independiente de cualquier widget o framework visual. Centraliza las reglas matemáticas:
+     - Cálculo de porcentaje de progreso fraccionario y entero (`progressFraction`, `progressPercent`).
+     - Cálculo de montos restantes (`remainingAmount`).
+     - Computación dinámica de meses restantes hasta la meta (`monthsRemaining`).
+     - Proyección de cuota mensual de ahorro sugerida (`monthlySavingRequired`).
+     - Máquina de estados botánicos para gamificación (`PlantState`: Semilla 🌱, Brote 🌿, Crecimiento 🍀 y Floración 🌸).
+
+2. **Capa de Presentación (`lib/features/savings/presentation/`):**
+   - **`SavingsScreen`:** Pantalla principal orquestada mediante un `ConsumerStatefulWidget`.
+   - **`savings_widgets.dart`:** Desacoplamiento de componentes reutilizables:
+     - `SavingsTopBar`: Encabezado con avatar e indicador de estado en línea.
+     - `SavingsFilterChips`: Segmented buttons animados para alternar entre `Todas`, `Activas` y `Hechas`.
+     - `SavingsMissionCard`: Tarjetas interactivas de ahorro con semáforo botánico y badges de vencimiento.
+     - `EmptyMissionsCard`: Estado vacío ilustrado cuando no existen metas en el filtro seleccionado.
+     - `SavingsDialogHelper`: Abstracción de formularios modales con estilización homogénea y validaciones numéricas.
+
+3. **Capa de Núcleo e Infraestructura (`lib/core/`):**
+   - **`ApiService`:** Cliente HTTP con tokenización persistente en `SharedPreferences`.
+   - **Mecanismo de Resiliencia Offline:** En el commit `c562c67`, ante latencias o fallos de conexión hacia el backend en Render, el sistema realiza una conmutación transparente (*autonomous offline fallback*) hacia una base de datos local en memoria y caché JSON, impidiendo bloqueos o excepciones no controladas.
+
+---
+
+## 5.3. Trazabilidad de Commits y Registro en GitHub (Semanas 06 a 11)
+A continuación se presenta la relación cronológica de los commits registrados en la rama de trabajo `mejorar-ahorros-Valentino` del repositorio oficial, demostrando el desarrollo continuo y sostenido:
+
+| Hash de Commit | Semana | Fecha Registrada | Tipo | Mensaje de Commit (Conventional Commits) |
+| :---: | :---: | :---: | :---: | :--- |
+| `66d92eb` | Sem 06 | 2026-09-13 10:29 | `feat` | `feat(savings): rediseñar interfaz de ahorros con estética moderna alineada a asesor financiero` |
+| `8de9d60` | Sem 07 | 2026-09-17 11:20 | `refactor` | `refactor(savings): extraer modelo de dominio SavingsMission con logica de progreso y proyeccion` |
+| `840e393` | Sem 08 | 2026-09-22 16:45 | `feat` | `feat(savings): agregar soporte de fecha limite (deadline) en metas de ahorro` |
+| `95bfe4a` | Sem 08 | 2026-09-25 18:10 | `feat` | `feat(savings): agregar filtros Activas/Completadas con chips animados en metas` |
+| `70558bf` | Sem 09 | 2026-09-28 10:15 | `fix` | `fix(savings): corregir cierre de anidamiento de widgets y optimizar evaluacion de fecha limite` |
+| `8758f98` | Sem 09 | 2026-09-28 15:30 | `fix` | `fix(savings): sincronizar texto ortografico BÓVEDA DE AHORROS y verificar suite de widgets` |
+| `d4f6d28` | Sem 09 | 2026-09-29 11:00 | `test` | `test(savings): agregar suite de pruebas unitarias para SavingsMission y logica de proyeccion` |
+| `11a7c75` | Sem 09 | 2026-09-29 16:30 | `test` | `test(savings): agregar pruebas de widgets para renderizado, filtros y estado vacio de SavingsScreen` |
+| `5733d13` | Sem 09 | 2026-09-29 17:28 | `docs` | `docs(savings): registrar bitacora de avance y roadmap para Avance 2` |
+| `a9f9664` | Sem 10 | 2026-10-05 16:45 | `feat` | `feat(expenses): agregar selector de rango temporal mensual y semanal con modelo de agregacion` |
+| `2d95ee2` | Sem 10 | 2026-10-06 11:20 | `feat` | `feat(dashboard): optimizar renderizado reactivo del grafico de pastel fl_chart con interactividad por periodo` |
+| `f1270b8` | Sem 10 | 2026-10-06 15:30 | `test` | `test(expenses): validar calculos de distribucion porcentual por categoria y filtros temporales` |
+| `bc9a61e` | Sem 10 | 2026-10-06 15:50 | `docs` | `docs(project): registrar informe de avance y bitacora de entregables para Semana 10` |
+| `7672dff` | Sem 11 | 2026-10-13 11:30 | `feat` | `feat(advisor): implementar algoritmo de salud financiera basado en regla 50/30/20` |
+| `acd62b6` | Sem 11 | 2026-10-14 16:45 | `feat` | `feat(advisor): agregar tarjetas de diagnostico semaforico y recomendaciones contextuales` |
+| `b6a5c67` | Sem 11 | 2026-10-15 15:20 | `test` | `test(advisor): suite de pruebas unitarias para evaluacion de Score y umbrales de riesgo` |
+| `52b922e` | Sem 11 | 2026-10-16 17:00 | `docs` | `docs(project): actualizar informe de avance y bitacora de entregables para Semana 11` |
+| `c562c67` | Sem 11 | 2026-10-18 20:47 | `fix` | `fix(core): habilitar fallback autónomo a base de datos offline local ante desconexión o fallo de red` |
+
+---
+
+## 5.4. Gestión de Fallos Técnicos, Bugs y Soluciones de Ingeniería
+El proceso de construcción del software experimentó desafíos técnicos y bugs reales durante los sprints, los cuales fueron identificados, aislados y corregidos sistemáticamente:
+
+1. **Fallo de Renderizado por Desborde de Píxeles (`RenderFlex overflow by 38 pixels` en Semana 09):**
+   - *Causa:* Al introducir el botón de depósito rápido junto al texto de fecha límite dentro de un widget `Row`, en terminales móviles de pantalla angosta el contenido excedía el ancho disponible, disparando el típico fallo visual de Flutter con franjas amarillas y negras.
+   - *Solución:* En el commit `70558bf`, se aplicó contención defensiva envolviendo el texto de fecha en un widget `Flexible` con propiedad `overflow: TextOverflow.ellipsis` y rediseñando el botón como un `ElevatedButton.icon` con padding adaptativo.
+
+2. **Fallo de Sincronización y Validación de Tipos en Fechas Límite:**
+   - *Causa:* Las metas sin fecha límite asignada producían excepciones de formato al intentar parsear valores nulos mediante `DateTime.parse()`.
+   - *Solución:* Se implementó `DateTime.tryParse()` en la fábrica `SavingsMission.fromMap`, manejando campos nulos de forma segura y garantizando que las metas sin fecha asignen `monthsRemaining = null` sin interrumpir el flujo de renderizado.
+
+3. **Inconsistencia de Red y Desconexión con el Servidor Cloud (Semana 11):**
+   - *Causa:* La instancia gratuita del backend en Render entra en modo de suspensión (*spin-down*) por inactividad, lo que ocasionaba demoras de hasta 40 segundos o fallos de timeout en la aplicación móvil.
+   - *Solución:* En el commit `c562c67`, se añadió un timeout de 4 segundos con conmutación automática hacia almacenamiento local (`SharedPreferences`), permitiendo que el usuario cree y abone a sus metas aun sin conexión a internet.
+
+---
+
+## 5.5. Aseguramiento de la Calidad y Pruebas Automatizadas
+La integridad funcional del código se encuentra respaldada por una suite automatizada de **28 pruebas ejecutadas mediante el framework oficial de Flutter**, logrando una tasa de aprobación del 100%:
+
+```text
+RESULTADO DE LA EJECUCIÓN (flutter test):
+00:03 +28: All tests passed! (100% OK, 0 fallos, 0 omitidas)
+Exit code: 0 [SUCCESS]
+```
+
+### Detalle de la Suite de Pruebas:
+- **`savings_mission_model_test.dart` (7 pruebas unitarias):**
+  - Validación de cálculo de porcentaje (0% a 100%).
+  - Verificación de acotamiento de fracciones (`clamp`).
+  - Cálculo exacto de monto restante por financiar.
+  - Cálculo de meses restantes frente a fechas futuras.
+  - Proyección de ahorro mensual sugerido.
+  - Evolución de estados botánicos y emojis (Semilla a Flor).
+  - Serialización y deserialización bidireccional JSON.
+- **`savings_screen_test.dart` (2 pruebas de widgets e interfaz):**
+  - Renderizado de barra superior, tarjeta de bóveda y listado.
+  - Conmutación dinámica de filtros (`Todas`, `Activas`, `Hechas`).
+  - Renderizado de tarjeta de estado vacío cuando no existen metas.
+- **`financial_health_engine_test.dart` (5 pruebas unitarias):**
+  - Cálculo de puntuación 100/100 bajo regla 50/30/20.
+  - Penalizaciones por exceso en gastos de ocio (> 30%).
+  - Penalizaciones por sobregasto en necesidades (> 50%).
+- **`expense_aggregation_test.dart` (7 pruebas unitarias):**
+  - Distribución porcentual por categorías.
+  - Filtros temporales (Mes, Semana, Histórico).
+- **`dashboard_screen_test.dart` & `widget_test.dart` (7 pruebas de interfaz):**
+  - Conmutación de chips temporales y renderizado del gráfico Donut.
+
+---
+
+## 5.6. Catálogo de Evidencias Visuales del Avance 2
+A continuación se relacionan las capturas probatorias generadas y almacenadas en el repositorio institucional (`docs/evidencias_avance2/`):
+
+1. **Figura 5.1:** *Estado de la pantalla de Ahorros ANTES del Pull Request (Semana 06)* &mdash; Prototipo básico inicial sin filtros ni proyecciones (`01_ahorros_antes_pr_semana06.jpg`).
+2. **Figura 5.2:** *Estado de la pantalla de Ahorros DESPUÉS del Pull Request (Semana 11)* &mdash; Bóveda con dial circular, filtros y gamificación botánica (`02_ahorros_despues_pr_semana11.jpg`).
+3. **Figura 5.3:** *Formulario modal de creación de meta con DatePicker interactivo* &mdash; Selector de fecha límite en español (`03_modal_nueva_meta_datepicker_semana08.jpg`).
+4. **Figura 5.4:** *Evidencia del fallo de layout en dispositivo móvil* &mdash; RenderFlex overflow de 38px en botón de ahorro durante la Semana 09 (`04_fallo_renderflex_overflow_semana09.jpg`).
+5. **Figura 5.5:** *Integración con el Asesor Financiero Algorítmico* &mdash; Diagnóstico bajo regla 50/30/20 y redirección de excedentes a metas (`05_integracion_asesor_salud_semana11.jpg`).
+6. **Figura 5.6:** *Ejecución exitosa de la suite de 28 pruebas automatizadas en terminal* (`06_pruebas_unitarias_terminal.png`).
+7. **Figura 5.7:** *Registro cronológico semanal de commits en Git log* (`07_historial_commits_git_log.png`).
+8. **Figura 5.8:** *Git diff de resolución del bug de desborde de píxeles en botón* (`08_correccion_fallo_diff_semana09.png`).
+9. **Figura 5.9:** *Vista oficial del Pull Request #12 en GitHub con checks aprobados* (`09_pull_request_github_resumen.png`).
+
 ---
 
 ## REFERENCIAS BIBLIOGRÁFICAS
