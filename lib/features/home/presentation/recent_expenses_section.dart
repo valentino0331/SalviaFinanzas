@@ -8,7 +8,6 @@ import '../../expenses/application/gestor_gastos.dart';
 import '../../expenses/domain/expense.dart';
 import '../../expenses/presentation/expense_form.dart';
 
-
 class RecentExpensesSection extends ConsumerStatefulWidget {
   const RecentExpensesSection({super.key});
 
@@ -78,7 +77,6 @@ class _RecentExpensesSectionState extends ConsumerState<RecentExpensesSection> {
   }
 }
 
-
 class _EmptyExpensesCard extends StatelessWidget {
   const _EmptyExpensesCard();
 
@@ -129,16 +127,52 @@ class _EmptyExpensesCard extends StatelessWidget {
   }
 }
 
-
 class _ExpenseTile extends ConsumerWidget {
   const _ExpenseTile({required this.expense});
 
   final Expense expense;
 
-  /// [TAREA 9 · S10] Eliminación de gasto (diagrama "Eliminar gasto").
-  /// Paso 1: el usuario desliza la tarjeta hacia la izquierda.
-  /// Paso 2: la pantalla llama a eliminarGasto(idGasto) del Gestor de Gastos.
-  /// Paso 8: se notifica la actualización del balance.
+  Future<bool?> _confirmarEliminacion(BuildContext context) {
+    final nombre = expense.detail.isNotEmpty ? expense.detail : expense.category.label;
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          '¿Eliminar este gasto?',
+          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          '$nombre · S/ ${formatMoney(expense.amount)}',
+          style: GoogleFonts.outfit(color: AppColors.textMuted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              'Eliminar',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w800,
+                color: AppColors.danger,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _eliminar(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -166,6 +200,7 @@ class _ExpenseTile extends ConsumerWidget {
       child: Dismissible(
         key: ValueKey('gasto-${expense.id}'),
         direction: DismissDirection.endToStart,
+        confirmDismiss: (_) => _confirmarEliminacion(context),
         background: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 22),

@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_theme.dart';
+import '../../../core/formatters.dart';
 import '../../expenses/application/gestor_gastos.dart';
 import '../../expenses/domain/expense_category.dart';
-
 
 class CategoryChartCard extends StatelessWidget {
   const CategoryChartCard({super.key, required this.summary});
@@ -18,6 +18,25 @@ class CategoryChartCard extends StatelessWidget {
     ExpenseCategory.transporte,
     ExpenseCategory.otros,
   ];
+
+  List<MapEntry<ExpenseCategory, double>> _groupedCategories() {
+    final grouped = <ExpenseCategory, double>{};
+    var small = 0.0;
+    for (final e in summary.sortedCategories) {
+      final percent = summary.percentOf(e.key);
+      if (percent < 5 && e.key != ExpenseCategory.otros) {
+        small += e.value;
+      } else {
+        grouped[e.key] = e.value;
+      }
+    }
+    if (small > 0) {
+      grouped[ExpenseCategory.otros] = (grouped[ExpenseCategory.otros] ?? 0) + small;
+    }
+    final list = grouped.entries.toList();
+    list.sort((a, b) => b.value.compareTo(a.value));
+    return list;
+  }
 
   List<PieChartSectionData> _sections() {
     if (summary.isEmpty) {
@@ -33,7 +52,7 @@ class CategoryChartCard extends StatelessWidget {
         ),
       ];
     }
-    return summary.sortedCategories
+    return _groupedCategories()
         .map((e) => PieChartSectionData(
               value: e.value,
               color: e.key.color,
@@ -48,7 +67,7 @@ class CategoryChartCard extends StatelessWidget {
     final empty = summary.isEmpty;
     final legend = empty
         ? _placeholderLegend.map((c) => MapEntry(c, 0.0)).toList()
-        : summary.sortedCategories;
+        : _groupedCategories();
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -111,9 +130,10 @@ class CategoryChartCard extends StatelessWidget {
                 for (final entry in legend)
                   _LegendRow(
                     category: entry.key,
+                    amountText: empty ? '' : 'S/ ${formatMoney(entry.value)}',
                     percentText: empty
                         ? '— %'
-                        : '${summary.percentOf(entry.key).toStringAsFixed(0)}%',
+                        : '${(entry.value / summary.total * 100).toStringAsFixed(0)}%',
                     muted: empty,
                   ),
               ],
@@ -128,11 +148,13 @@ class CategoryChartCard extends StatelessWidget {
 class _LegendRow extends StatelessWidget {
   const _LegendRow({
     required this.category,
+    required this.amountText,
     required this.percentText,
     required this.muted,
   });
 
   final ExpenseCategory category;
+  final String amountText;
   final String percentText;
   final bool muted;
 
@@ -162,6 +184,17 @@ class _LegendRow extends StatelessWidget {
               ),
             ),
           ),
+          if (amountText.isNotEmpty) ...[
+            Text(
+              amountText,
+              style: GoogleFonts.outfit(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
           Text(
             percentText,
             style: GoogleFonts.outfit(
