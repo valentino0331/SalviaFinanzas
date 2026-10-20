@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../features/advisor/domain/financial_health_engine.dart';
 
 class ApiService {
   // Cambia esto por tu URL de Render en producción.
@@ -13,16 +14,107 @@ class ApiService {
   static final Map<String, dynamic> _localDb = {
     'user': {
       'id': 'google_mock_123',
-      'email': 'marca@example.com',
-      'name': 'Marcio A.',
-      'avatar_url': 'https://api.dicebear.com/7.x/bottts/png?seed=Marcio',
-      'points': 0,
-      'streak': 0,
-      'monthly_income': 2000.00,
+      'email': 'valentino@salvia.local',
+      'name': 'Valentino Marca',
+      'avatar_url': 'https://api.dicebear.com/7.x/bottts/png?seed=Valentino',
+      'points': 450,
+      'streak': 12,
+      'monthly_income': 2200.00,
     },
-    'expenses': [],
-    'savings': [],
-    'habits': []
+    'expenses': [
+      {
+        'id': 1,
+        'user_id': 'google_mock_123',
+        'amount': 450.00,
+        'category': 'Universidad',
+        'subcategory': 'pension',
+        'description': 'Cuota universitaria del mes',
+        'date': '2026-10-14T10:00:00.000Z',
+        'recurrence': 'monthly'
+      },
+      {
+        'id': 2,
+        'user_id': 'google_mock_123',
+        'amount': 180.00,
+        'category': 'Comida',
+        'subcategory': 'supermercado',
+        'description': 'Compras de despensa semanal',
+        'date': '2026-10-15T14:30:00.000Z',
+        'recurrence': 'once'
+      },
+      {
+        'id': 3,
+        'user_id': 'google_mock_123',
+        'amount': 75.00,
+        'category': 'Transporte',
+        'subcategory': 'metropolitano',
+        'description': 'Recarga de tarjeta de pasajes',
+        'date': '2026-10-16T08:15:00.000Z',
+        'recurrence': 'once'
+      },
+      {
+        'id': 4,
+        'user_id': 'google_mock_123',
+        'amount': 95.00,
+        'category': 'Ocio',
+        'subcategory': 'cine',
+        'description': 'Salida recreativa con amigos',
+        'date': '2026-10-17T19:00:00.000Z',
+        'recurrence': 'once'
+      }
+    ],
+    'savings': [
+      {
+        'id': 1,
+        'user_id': 'google_mock_123',
+        'title': 'Pagar Ciclo Universidad',
+        'target_amount': 1500.00,
+        'current_amount': 1050.00,
+        'deadline': '2026-12-15',
+        'icon_name': 'school',
+        'is_completed': false,
+      },
+      {
+        'id': 2,
+        'user_id': 'google_mock_123',
+        'title': 'Fondo de Emergencia Estudiantil',
+        'target_amount': 800.00,
+        'current_amount': 800.00,
+        'deadline': '2026-11-30',
+        'icon_name': 'savings',
+        'is_completed': true,
+      },
+      {
+        'id': 3,
+        'user_id': 'google_mock_123',
+        'title': 'Viaje a Cusco en Vacaciones',
+        'target_amount': 1200.00,
+        'current_amount': 360.00,
+        'deadline': '2027-02-28',
+        'icon_name': 'flight',
+        'is_completed': false,
+      }
+    ],
+    'habits': [
+      {
+        'id': 1,
+        'user_id': 'google_mock_123',
+        'title': 'Registrar gastos diarios',
+        'description': 'Anotar cada compra para mantener el control',
+        'points_reward': 15,
+        'streak': 12,
+        'last_completed_at': '2026-10-19',
+      },
+      {
+        'id': 2,
+        'user_id': 'google_mock_123',
+        'title': 'Ahorro hormiga del día',
+        'description': 'Guardar al menos S/ 5 en la alcancía',
+        'points_reward': 20,
+        'streak': 8,
+        'last_completed_at': '2026-10-18',
+      }
+    ]
   };
 
   static Future<void> _saveLocalDb() async {
@@ -83,7 +175,10 @@ class ApiService {
       'monthly_income': monthlyIncome ?? 1500.00,
     };
 
-    if (_isOfflineMode) {
+    final isLocalUser = id.startsWith('offline_user_');
+
+    if (_isOfflineMode || isLocalUser) {
+      _isOfflineMode = true;
       _token = id;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', id);
@@ -96,21 +191,36 @@ class ApiService {
       return _localDb['user'];
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/auth/google'),
-      headers: _headers,
-      body: jsonEncode(data),
-    );
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/auth/google'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ).timeout(const Duration(seconds: 4));
 
-    if (res.statusCode == 200) {
-      final body = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        _token = id;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', id);
+        return body;
+      }
+    } catch (e) {
+      print("Aviso: Conexión al servidor falló ($e). Conmutando automáticamente a modo Offline local 🌿");
+      _isOfflineMode = true;
       _token = id;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', id);
-      return body;
-    } else {
-      throw Exception("Error al autenticar: ${res.body}");
+      _localDb['user']['id'] = id;
+      _localDb['user']['name'] = name;
+      _localDb['user']['email'] = email;
+      _localDb['user']['avatar_url'] = avatarUrl ?? 'https://api.dicebear.com/7.x/bottts/png?seed=$name';
+      _localDb['user']['monthly_income'] = monthlyIncome ?? 1500.00;
+      await _saveLocalDb();
+      return _localDb['user'];
     }
+
+    throw Exception("Error al autenticar");
   }
 
   static Future<void> logout() async {
@@ -141,14 +251,21 @@ class ApiService {
       return _localDb['user'];
     }
 
-    final res = await http.put(
-      Uri.parse('$baseUrl/user/income'),
-      headers: _headers,
-      body: jsonEncode({'monthly_income': income}),
-    );
+    try {
+      final res = await http.put(
+        Uri.parse('$baseUrl/user/income'),
+        headers: _headers,
+        body: jsonEncode({'monthly_income': income}),
+      ).timeout(const Duration(seconds: 4));
 
-    if (res.statusCode == 200) {
-      return jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (_) {
+      _isOfflineMode = true;
+      _localDb['user']['monthly_income'] = income;
+      await _saveLocalDb();
+      return _localDb['user'];
     }
     throw Exception("Error al actualizar ingresos");
   }
@@ -157,13 +274,21 @@ class ApiService {
   static Future<Map<String, dynamic>?> getProfile() async {
     if (_isOfflineMode) {
       final prefs = await SharedPreferences.getInstance();
-      final completed = prefs.getBool('onboarding_completed') ?? false;
+      final completed = prefs.getBool('onboarding_completed') ?? true;
       if (!completed) return null;
       return _localDb['user'];
     }
-    final res = await http.get(Uri.parse('$baseUrl/user/profile'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
-    throw Exception("Error al cargar perfil");
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/user/profile'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      final prefs = await SharedPreferences.getInstance();
+      final completed = prefs.getBool('onboarding_completed') ?? true;
+      if (!completed) return null;
+      return _localDb['user'];
+    }
+    return null;
   }
 
   // GASTOS
@@ -173,8 +298,15 @@ class ApiService {
       list.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
       return list;
     }
-    final res = await http.get(Uri.parse('$baseUrl/expenses'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/expenses'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      List<dynamic> list = List.from(_localDb['expenses']);
+      list.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+      return list;
+    }
     throw Exception("Error al cargar gastos");
   }
 
@@ -195,12 +327,17 @@ class ApiService {
       return newExp;
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/expenses'),
-      headers: _headers,
-      body: jsonEncode(expense),
-    );
-    if (res.statusCode == 201) return jsonDecode(res.body);
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/expenses'),
+        headers: _headers,
+        body: jsonEncode(expense),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 201) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return addExpense(expense);
+    }
     throw Exception("Error al agregar gasto");
   }
 
@@ -210,8 +347,14 @@ class ApiService {
       await _saveLocalDb();
       return;
     }
-    final res = await http.delete(Uri.parse('$baseUrl/expenses/$id'), headers: _headers);
-    if (res.statusCode != 200) throw Exception("Error al borrar gasto");
+    try {
+      final res = await http.delete(Uri.parse('$baseUrl/expenses/$id'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode != 200) throw Exception("Error al borrar gasto");
+    } catch (_) {
+      _isOfflineMode = true;
+      _localDb['expenses'].removeWhere((e) => e['id'] == id);
+      await _saveLocalDb();
+    }
   }
 
   // MISIONES DE AHORRO
@@ -219,20 +362,28 @@ class ApiService {
     if (_isOfflineMode) {
       return List.from(_localDb['savings']);
     }
-    final res = await http.get(Uri.parse('$baseUrl/savings-missions'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/savings-missions'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return List.from(_localDb['savings']);
+    }
     throw Exception("Error al cargar misiones");
   }
 
   static Future<Map<String, dynamic>> addSavingsMission(Map<String, dynamic> mission) async {
     if (_isOfflineMode) {
       final newMission = {
-        'id': _localDb['savings'].length + 1,
+        'id': _localDb['savings'].isEmpty
+            ? 1
+            : (_localDb['savings'].last['id'] as int) + 1,
         'user_id': _token ?? 'google_mock_123',
         'title': mission['title'],
         'target_amount': double.parse(mission['target_amount'].toString()),
         'current_amount': 0.0,
-        'deadline': mission['deadline'],
+        // Fecha límite opcional enviada desde el formulario
+        'deadline': mission['deadline'] as String?,
         'icon_name': mission['icon_name'] ?? 'savings',
         'is_completed': false,
       };
@@ -241,12 +392,17 @@ class ApiService {
       return newMission;
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/savings-missions'),
-      headers: _headers,
-      body: jsonEncode(mission),
-    );
-    if (res.statusCode == 201) return jsonDecode(res.body);
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/savings-missions'),
+        headers: _headers,
+        body: jsonEncode(mission),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 201) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return addSavingsMission(mission);
+    }
     throw Exception("Error al agregar misión");
   }
 
@@ -270,13 +426,34 @@ class ApiService {
       };
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/savings-missions/$id/save'),
-      headers: _headers,
-      body: jsonEncode({'amount': amount}),
-    );
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/savings-missions/$id/save'),
+        headers: _headers,
+        body: jsonEncode({'amount': amount}),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return saveToMission(id, amount);
+    }
     throw Exception("Error al ahorrar en la misión");
+  }
+
+  static Future<void> deleteSavingsMission(int id) async {
+    if (_isOfflineMode) {
+      _localDb['savings'].removeWhere((m) => m['id'] == id);
+      await _saveLocalDb();
+      return;
+    }
+    try {
+      final res = await http.delete(Uri.parse('$baseUrl/savings-missions/$id'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode != 200 && res.statusCode != 204) throw Exception("Error al borrar misión");
+    } catch (_) {
+      _isOfflineMode = true;
+      _localDb['savings'].removeWhere((m) => m['id'] == id);
+      await _saveLocalDb();
+    }
   }
 
   // HÁBITOS
@@ -284,8 +461,13 @@ class ApiService {
     if (_isOfflineMode) {
       return List.from(_localDb['habits']);
     }
-    final res = await http.get(Uri.parse('$baseUrl/habits'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/habits'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return List.from(_localDb['habits']);
+    }
     throw Exception("Error al cargar hábitos");
   }
 
@@ -305,12 +487,17 @@ class ApiService {
       return newHabit;
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/habits'),
-      headers: _headers,
-      body: jsonEncode(habit),
-    );
-    if (res.statusCode == 201) return jsonDecode(res.body);
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/habits'),
+        headers: _headers,
+        body: jsonEncode(habit),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 201) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return addHabit(habit);
+    }
     throw Exception("Error al agregar hábito");
   }
 
@@ -345,13 +532,17 @@ class ApiService {
       };
     }
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/habits/$id/complete'),
-      headers: _headers,
-    );
-    if (res.statusCode == 200) return jsonDecode(res.body);
-    final error = jsonDecode(res.body);
-    throw Exception(error['error'] ?? "Error al completar hábito");
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/habits/$id/complete'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return completeHabit(id);
+    }
+    throw Exception("Error al completar hábito");
   }
 
   // TABLA DE CLASIFICACIÓN
@@ -367,87 +558,40 @@ class ApiService {
       return list;
     }
 
-    final res = await http.get(Uri.parse('$baseUrl/leaderboard'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/leaderboard'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return getLeaderboard();
+    }
     throw Exception("Error al cargar tabla de clasificación");
   }
 
   // ASESOR FINANCIERO
   static Future<Map<String, dynamic>> getFinancialAdvisorReport() async {
     if (_isOfflineMode) {
-      // Simular cálculo de diagnóstico
+      final user = _localDb['user'] as Map<String, dynamic>?;
+      final income = double.tryParse(user?['monthly_income']?.toString() ?? '2000') ?? 2000.0;
       final expenses = _localDb['expenses'] as List<dynamic>;
-      final missions = (_localDb['savings'] as List<dynamic>).where((m) => m['is_completed'] == false).toList();
-      
-      final oneMonthAgo = DateTime.now().subtract(const Duration(days: 30));
-      final recentExpenses = expenses.where((e) => DateTime.parse(e['date']).isAfter(oneMonthAgo)).toList();
-      
-      double totalSpent = recentExpenses.fold(0.0, (acc, e) => acc + double.parse(e['amount'].toString()));
-      
-      Map<String, double> catSummary = {};
-      for (var e in recentExpenses) {
-        final cat = e['category'];
-        catSummary[cat] = (catSummary[cat] ?? 0.0) + double.parse(e['amount'].toString());
-      }
+      final missions = _localDb['savings'] as List<dynamic>;
 
-      int score = 100;
-      List<String> tips = [];
+      final report = FinancialHealthEngine.calculate(
+        monthlyIncome: income,
+        expenses: expenses,
+        savingsMissions: missions,
+      );
 
-      final double foodSpent = catSummary['Comida'] ?? 0.0;
-      final double leisureSpent = catSummary['Ocio'] ?? 0.0;
-      const double budget = 1500.0;
-
-      if (totalSpent > budget) {
-        score -= 30;
-        tips.add("Has superado tu límite sugerido de S/. 1,500. Intenta aplazar compras no urgentes.");
-      } else if (totalSpent > budget * 0.75) {
-        score -= 15;
-        tips.add("Estás por alcanzar el 80% de tu presupuesto de tranquilidad en Soles. Revisa el detalle de tus gastos.");
-      }
-
-      if (leisureSpent > budget * 0.20) {
-        score -= 15;
-        tips.add("Tus gastos en Ocio (S/. ${leisureSpent.toStringAsFixed(2)}) superan el 20% recomendado. ¡Aquí tienes oportunidad de ahorrar!");
-      }
-
-      if (foodSpent > budget * 0.35) {
-        score -= 10;
-        tips.add("Has gastado bastante comiendo fuera (S/. ${foodSpent.toStringAsFixed(2)}). Preparar más almuerzos en casa (ej. pollo) te ahorraría unos S/. 120 al mes.");
-      }
-
-      if (missions.isNotEmpty) {
-        final mainMission = missions.first;
-        final double missing = double.parse(mainMission['target_amount'].toString()) - double.parse(mainMission['current_amount'].toString());
-        if (leisureSpent > 0) {
-          final potential = (leisureSpent * 0.5 < missing) ? leisureSpent * 0.5 : missing;
-          tips.add("💡 Consejo Salvia: Si recortas el 50% de tus compras en Ocio de este mes, acelerarás tu meta '${mainMission['title']}' sumándole S/. ${potential.toStringAsFixed(2)}.");
-        }
-      } else {
-        tips.add("Aún no tienes misiones de ahorro activas. Añade una para dar dirección y propósito a tus finanzas.");
-      }
-
-      String status = "Excelente";
-      if (score < 60) {
-        status = "Crítico";
-      } else if (score < 85) {
-        status = "Moderado";
-      }
-
-      if (tips.isEmpty) {
-        tips.add("¡Tus finanzas están en un estado óptimo! Continúa registrando tus gastos y manteniendo tus buenos hábitos.");
-      }
-
-      return {
-        'score': score,
-        'status': status,
-        'total_spent_30_days': totalSpent,
-        'category_summary': catSummary,
-        'tips': tips
-      };
+      return report.toMap();
     }
 
-    final res = await http.get(Uri.parse('$baseUrl/financial-advisor'), headers: _headers);
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/financial-advisor'), headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {
+      _isOfflineMode = true;
+      return getFinancialAdvisorReport();
+    }
     throw Exception("Error al cargar reporte de asesor");
   }
 }

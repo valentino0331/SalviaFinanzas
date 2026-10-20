@@ -187,6 +187,7 @@ class SavingsNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
     } catch (_) {}
   }
 
+
   Future<bool> saveFunds(int id, double amount) async {
     try {
       final result = await ApiService.saveToMission(id, amount);
@@ -207,6 +208,15 @@ class SavingsNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
     } catch (_) {
       return false;
     }
+  }
+
+  Future<void> deleteMission(int id) async {
+    try {
+      await ApiService.deleteSavingsMission(id);
+      state.whenData((list) {
+        state = AsyncValue.data(list.where((m) => m['id'] != id).toList());
+      });
+    } catch (_) {}
   }
 }
 

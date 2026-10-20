@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/theme.dart';
 import '../../../core/providers.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
 import '../../savings/presentation/savings_screen.dart';
@@ -39,11 +38,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(color: const Color(0xFFE6ECE6).withOpacity(0.8), width: 1),
+            top: BorderSide(color: const Color(0xFFE6ECE6).withValues(alpha: 0.8), width: 1),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),

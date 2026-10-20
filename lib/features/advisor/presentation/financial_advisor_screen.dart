@@ -298,6 +298,39 @@ class FinancialAdvisorScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+
+                    // SECCIÓN: "Regla 50 / 30 / 20"
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Regla Financiera 50 / 30 / 20",
+                          style: GoogleFonts.outfit(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF132A1D),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE2EBE3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            "Mensual",
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF386641),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildRule503020Card(report, currencyFormat),
                     const SizedBox(height: 26),
 
                     // SECCIÓN: "Notas del Asesor Salvia" (con badge '1 nuevo')
@@ -678,6 +711,107 @@ class FinancialAdvisorScreen extends ConsumerWidget {
             fontSize: 14,
             fontWeight: FontWeight.w800,
             color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRule503020Card(Map<String, dynamic> report, NumberFormat currencyFormat) {
+    final needsPct = (double.tryParse(report['needs_percentage']?.toString() ?? '50') ?? 50.0).clamp(0.0, 100.0);
+    final wantsPct = (double.tryParse(report['wants_percentage']?.toString() ?? '30') ?? 30.0).clamp(0.0, 100.0);
+    final savingsPct = (double.tryParse(report['savings_percentage']?.toString() ?? '20') ?? 20.0).clamp(0.0, 100.0);
+
+    final needsSpent = double.tryParse(report['needs_spent']?.toString() ?? '0') ?? 0.0;
+    final wantsSpent = double.tryParse(report['wants_spent']?.toString() ?? '0') ?? 0.0;
+    final savingsAllocated = double.tryParse(report['savings_allocated']?.toString() ?? '0') ?? 0.0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE7ECE7)),
+        boxShadow: [
+          const BoxShadow(
+            color: Color(0x05000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _budgetBarItem(
+            title: "Necesidades (Techo 50%)",
+            spentText: currencyFormat.format(needsSpent),
+            percent: needsPct,
+            targetPct: 50.0,
+            barColor: const Color(0xFF2E7D32),
+          ),
+          const SizedBox(height: 16),
+          _budgetBarItem(
+            title: "Deseos y Ocio (Techo 30%)",
+            spentText: currencyFormat.format(wantsSpent),
+            percent: wantsPct,
+            targetPct: 30.0,
+            barColor: wantsPct > 30.0 ? const Color(0xFFE53935) : const Color(0xFFFFA000),
+          ),
+          const SizedBox(height: 16),
+          _budgetBarItem(
+            title: "Ahorro e Inversión (Piso 20%)",
+            spentText: currencyFormat.format(savingsAllocated),
+            percent: savingsPct,
+            targetPct: 20.0,
+            barColor: const Color(0xFF00B4D8),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _budgetBarItem({
+    required String title,
+    required String spentText,
+    required double percent,
+    required double targetPct,
+    required Color barColor,
+  }) {
+    final isExceeded = percent > targetPct && targetPct <= 50;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.outfit(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF132A1D),
+              ),
+            ),
+            Text(
+              "$spentText (${percent.toStringAsFixed(0)}%)",
+              style: GoogleFonts.outfit(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: isExceeded ? const Color(0xFFE53935) : const Color(0xFF526E5D),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: LinearProgressIndicator(
+            value: (percent / 100.0).clamp(0.0, 1.0),
+            minHeight: 8,
+            backgroundColor: const Color(0xFFEFF3EF),
+            valueColor: AlwaysStoppedAnimation<Color>(barColor),
           ),
         ),
       ],

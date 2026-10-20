@@ -1,30 +1,65 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appdegastos/features/savings/presentation/savings_screen.dart';
+import 'package:appdegastos/core/providers.dart';
 
-import 'package:appdegastos/main.dart';
+class TestSavingsNotifier extends StateNotifier<AsyncValue<List<dynamic>>> implements SavingsNotifier {
+  TestSavingsNotifier()
+      : super(
+          const AsyncValue.data([
+            {
+              'id': 1,
+              'title': 'Fondo de Emergencia',
+              'target_amount': 1000.0,
+              'current_amount': 500.0,
+              'is_completed': false,
+              'icon_name': 'savings',
+            }
+          ]),
+        );
+
+  @override
+  Ref get ref => throw UnimplementedError();
+
+  @override
+  Future<void> loadMissions() async {}
+
+  @override
+  Future<void> addMission(String title, double targetAmount, {String? deadline, String? iconName}) async {}
+
+  @override
+  Future<bool> saveFunds(int id, double amount) async => false;
+
+  @override
+  Future<void> deleteMission(int id) async {}
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('SavingsScreen renders top bar, hero card and mission list', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          savingsProvider.overrideWith((ref) => TestSavingsNotifier()),
+        ],
+        child: const MaterialApp(
+          home: SavingsScreen(),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Top Bar
+    expect(find.text('SALVIA'), findsOneWidget);
+    expect(find.text('Ahorros & Metas'), findsOneWidget);
+
+    // Hero Dial Card
+    expect(find.text('BÓVEDA DE AHORROS'), findsOneWidget);
+    expect(find.text('50%'), findsOneWidget);
+
+    // Mission Card
+    expect(find.text('Fondo de Emergencia'), findsOneWidget);
+    expect(find.text('+ Aportar'), findsOneWidget);
   });
 }
