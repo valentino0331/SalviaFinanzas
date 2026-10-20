@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../domain/habit.dart';
+
 class HabitCard extends StatelessWidget {
   const HabitCard({
     super.key,
     required this.habit,
-    required this.isCompletedToday,
     this.onTap,
   });
 
-  final Map<String, dynamic> habit;
-  final bool isCompletedToday;
+  final Habit habit;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final int streak = habit['streak'] ?? 0;
-    final int pts = habit['points_reward'] ?? 10;
-    final String title = habit['title'] ?? "";
-    final String desc = habit['description'] ?? "";
+    final isCompletedToday = habit.isCompletedToday;
+    final int streak = habit.streak;
+    final int pts = habit.pointsReward;
 
     return InkWell(
       onTap: onTap,
@@ -81,7 +80,7 @@ class HabitCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    habit.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
@@ -93,7 +92,7 @@ class HabitCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    desc,
+                    habit.description,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(

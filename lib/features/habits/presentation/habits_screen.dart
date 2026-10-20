@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme.dart';
 import '../../../core/providers.dart';
+import '../application/habits_providers.dart';
+import '../domain/habit_template.dart';
 import 'dialogs/add_habit_dialog.dart';
 import 'dialogs/habit_completed_dialog.dart';
 import 'widgets/habits_top_bar.dart';
@@ -14,19 +16,10 @@ import 'widgets/recommendation_card.dart';
 class HabitsScreen extends ConsumerWidget {
   const HabitsScreen({super.key});
 
-  static const List<Map<String, dynamic>> recommendedTemplates = [
-    { 'title': 'Registrar gastos diarios', 'description': 'Ingresar todo lo gastado antes de dormir.', 'points_reward': 10 },
-    { 'title': 'Ahorrar S/ 5 diarios', 'description': 'Desviar S/ 5 diarios directamente a tu alcancía.', 'points_reward': 20 },
-    { 'title': 'Cocinar en casa', 'description': 'Preparar almuerzo o cena en casa para ahorrar.', 'points_reward': 10 },
-    { 'title': 'Levantarme a las 6:00 AM', 'description': 'Aprovechar las primeras horas del día.', 'points_reward': 15 },
-    { 'title': 'Revisar presupuesto semanal', 'description': 'Evaluar si vas por buen camino con tu dinero.', 'points_reward': 20 },
-    { 'title': 'Leer 15 minutos', 'description': 'Aprender algo nuevo o leer un libro financiero.', 'points_reward': 15 },
-  ];
-
   void _completeHabit(BuildContext context, WidgetRef ref, int habitId, String title) async {
     try {
       await HapticFeedback.mediumImpact();
-      final points = await ref.read(habitsProvider.notifier).completeHabit(habitId);
+      final points = await ref.read(habitsActionsProvider).completeHabit(habitId);
 
       if (context.mounted) {
         showHabitCompletedDialog(context, title, points);
@@ -45,14 +38,13 @@ class HabitsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final habitsState = ref.watch(habitsProvider);
+    final habitsState = ref.watch(habitsViewProvider);
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final userName = (user?['name'] ?? 'Usuario').toString();
     final initials = userName.isNotEmpty
         ? userName.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
         : 'MR';
-    final todayStr = DateTime.now().toIso8601String().split('T')[0];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6F3),
@@ -61,11 +53,11 @@ class HabitsScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator(color: RusticTheme.primaryGreen)),
           error: (err, _) => Center(child: Text("Error al cargar hábitos: $err")),
           data: (habits) {
-            final activeTitles = habits.map((h) => h['title'] as String).toSet();
-            final pendingRecommendations = recommendedTemplates.where((t) => !activeTitles.contains(t['title'])).toList();
+            final activeTitles = habits.map((h) => h.title).toSet();
+            final pendingRecommendations = habitTemplates.where((t) => !activeTitles.contains(t.title)).toList();
 
             return RefreshIndicator(
-              onRefresh: () async => ref.read(habitsProvider.notifier).loadHabits(),
+              onRefresh: () async => ref.read(habitsActionsProvider).refresh(),
               color: RusticTheme.primaryGreen,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -91,7 +83,7 @@ class HabitsScreen extends ConsumerWidget {
                         ),
                       ),
                       TextButton.icon(
-                        onPressed: () => showAddHabitDialog(context, ref),
+                        onPressed: () => showAddHabitDialog(context),
                         icon: const Icon(Icons.add, size: 16),
                         label: Text(
                           "Crear Hábito",
@@ -124,15 +116,13 @@ class HabitsScreen extends ConsumerWidget {
                       ),
                       itemCount: habits.length,
                       itemBuilder: (context, index) {
-                        final h = habits[index];
-                        final bool isCompletedToday = h['last_completed_at'] == todayStr;
+                        final habit = habits[index];
 
                         return HabitCard(
-                          habit: h,
-                          isCompletedToday: isCompletedToday,
-                          onTap: isCompletedToday
+                          habit: habit,
+                          onTap: habit.isCompletedToday
                               ? null
-                              : () => _completeHabit(context, ref, h['id'], h['title'] ?? ""),
+                              : () => _completeHabit(context, ref, habit.id, habit.title),
                         );
                       },
                     ),
@@ -166,15 +156,26 @@ class HabitsScreen extends ConsumerWidget {
                           template: template,
                           onAdopt: () async {
                             await HapticFeedback.lightImpact();
-                            ref.read(habitsProvider.notifier).addHabit(
-                              template['title'],
-                              template['description'],
-                              template['points_reward'],
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("¡Hábito \"${template['title']}\" adoptado! 🌿")),
-                              );
+                            try {
+                              await ref.read(habitsActionsProvider).addHabit(
+                                    title: template.title,
+                                    description: template.description,
+                                    pointsReward: template.pointsReward,
+                                  );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("¡Hábito \"${template.title}\" adoptado! 🌿")),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(e.toString().replaceAll("Exception: ", "")),
+                                    backgroundColor: const Color(0xFFD94841),
+                                  ),
+                                );
+                              }
                             }
                           },
                         );

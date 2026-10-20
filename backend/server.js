@@ -9,6 +9,13 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
+// El "día" de los hábitos se calcula en hora local de Perú (UTC-5 fijo, sin
+// horario de verano), no en UTC. Antes se usaba `toISOString()`, cuyo corte a
+// medianoche UTC (19:00 en Perú) desincronizaba al cliente con el servidor.
+const TZ_OFFSET_MS = -5 * 60 * 60 * 1000;
+const localDateStr = (date = new Date()) =>
+  new Date(date.getTime() + TZ_OFFSET_MS).toISOString().split('T')[0];
+
 // Configuración de PostgreSQL en Neon
 let pool = null;
 let useMockDb = false;
@@ -50,9 +57,9 @@ const mockDb = {
     { id: 3, user_id: "google_mock_123", title: "Fondo de Ahorro para Viaje", target_amount: 600.00, current_amount: 600.00, deadline: "2026-07-20", icon_name: "flight", is_completed: true }
   ],
   habits: [
-    { id: 1, user_id: "google_mock_123", title: "Levantarme a las 6:00 AM", description: "Aprovechar las primeras horas del día.", points_reward: 15, streak: 3, last_completed_at: new Date(Date.now() - 3600000 * 24).toISOString().split('T')[0] },
+    { id: 1, user_id: "google_mock_123", title: "Levantarme a las 6:00 AM", description: "Aprovechar las primeras horas del día.", points_reward: 15, streak: 3, last_completed_at: localDateStr(new Date(Date.now() - 3600000 * 24)) },
     { id: 2, user_id: "google_mock_123", title: "Comer en casa (No Restaurante)", description: "Cocinar almuerzo o cena para ahorrar.", points_reward: 10, streak: 1, last_completed_at: null },
-    { id: 3, user_id: "google_mock_123", title: "Registrar gastos diarios", description: "Ingresar todo lo gastado antes de dormir.", points_reward: 10, streak: 5, last_completed_at: new Date().toISOString().split('T')[0] },
+    { id: 3, user_id: "google_mock_123", title: "Registrar gastos diarios", description: "Ingresar todo lo gastado antes de dormir.", points_reward: 10, streak: 5, last_completed_at: localDateStr() },
     { id: 4, user_id: "google_mock_123", title: "Ahorrar S/. 10 diarios", description: "Pasar S/. 10 directamente a tu alcancía.", points_reward: 20, streak: 0, last_completed_at: null }
   ],
   user_points_history: []
@@ -416,7 +423,7 @@ app.post('/api/habits', async (req, res) => {
 app.post('/api/habits/:id/complete', async (req, res) => {
   const habitId = parseInt(req.params.id);
   const userId = await getUserId(req);
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateStr();
 
   if (useMockDb) {
     const habit = mockDb.habits.find(h => h.id === habitId && h.user_id === userId);
@@ -426,10 +433,8 @@ app.post('/api/habits/:id/complete', async (req, res) => {
       return res.status(400).json({ error: "Este hábito ya se completó el día de hoy" });
     }
 
-    // Calcular racha
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    // Calcular racha (día anterior en hora local)
+    const yesterdayStr = localDateStr(new Date(Date.now() - 24 * 60 * 60 * 1000));
 
     if (habit.last_completed_at === yesterdayStr) {
       habit.streak += 1;
@@ -470,10 +475,8 @@ app.post('/api/habits/:id/complete', async (req, res) => {
         return res.status(400).json({ error: "Este hábito ya se completó hoy" });
       }
 
-      // Evaluar racha
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      // Evaluar racha (día anterior en hora local)
+      const yesterdayStr = localDateStr(new Date(Date.now() - 24 * 60 * 60 * 1000));
       const lastCompletedStr = habit.last_completed_at ? new Date(habit.last_completed_at).toISOString().split('T')[0] : null;
 
       let newStreak = 1;
