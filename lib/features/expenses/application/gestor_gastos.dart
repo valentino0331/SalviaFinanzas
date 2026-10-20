@@ -5,12 +5,9 @@ import '../domain/expense.dart';
 import '../domain/expense_category.dart';
 import '../domain/expense_validators.dart';
 
-
-
 final expenseRepositoryProvider = Provider<ExpenseRepository>(
   (ref) => LocalExpenseRepository(),
 );
-
 
 final monthlyIncomeProvider = StateProvider<double>((ref) => 5000.0);
 
@@ -18,7 +15,6 @@ final gestorGastosProvider =
     StateNotifierProvider<GestorGastos, AsyncValue<List<Expense>>>(
   (ref) => GestorGastos(ref.watch(expenseRepositoryProvider)),
 );
-
 
 class ExpenseSummary {
   const ExpenseSummary({
@@ -44,7 +40,6 @@ class ExpenseSummary {
   }
 }
 
-
 final expenseSummaryProvider = Provider<ExpenseSummary>((ref) {
   final expenses = ref.watch(gestorGastosProvider).valueOrNull ?? const [];
   final income = ref.watch(monthlyIncomeProvider);
@@ -64,8 +59,6 @@ final expenseSummaryProvider = Provider<ExpenseSummary>((ref) {
   );
 });
 
-
-
 class GestorGastos extends StateNotifier<AsyncValue<List<Expense>>> {
   GestorGastos(this._repo) : super(const AsyncValue.loading()) {
     cargar();
@@ -84,13 +77,11 @@ class GestorGastos extends StateNotifier<AsyncValue<List<Expense>>> {
     }
   }
 
-
   Future<Expense> agregarGasto({
     required double monto,
     required ExpenseCategory categoria,
     String detalle = '',
   }) async {
-    // [TAREA 8] El gestor vuelve a validar (defensa en profundidad).
     final error = ExpenseValidators.validateExpense(
       amount: monto,
       category: categoria,
@@ -106,13 +97,14 @@ class GestorGastos extends StateNotifier<AsyncValue<List<Expense>>> {
     );
 
     final actuales = state.valueOrNull ?? const <Expense>[];
-    state = AsyncValue.data([nuevo, ...actuales]);
+    final lista = [nuevo, ...actuales]..sort((a, b) => b.date.compareTo(a.date));
+    state = AsyncValue.data(lista);
     return nuevo;
   }
 
-
   Future<void> eliminarGasto(int idGasto) async {
     final actuales = state.valueOrNull ?? const <Expense>[];
+    if (!actuales.any((e) => e.id == idGasto)) return;
     final respaldo = List<Expense>.of(actuales);
     state = AsyncValue.data(actuales.where((e) => e.id != idGasto).toList());
 
