@@ -31,7 +31,7 @@ extension FinancialStatusExtension on FinancialStatus {
   }
 }
 
-/// Reporte inmutable del motor de salud financiera
+/// Reporte cuantitativo y cualitativo de salud financiera
 class FinancialHealthReport {
   final int score;
   final FinancialStatus status;
@@ -66,9 +66,11 @@ class FinancialHealthReport {
   Map<String, dynamic> toMap() {
     return {
       'score': score,
-      'status': status.label,
+      'status': status.name,
+      'status_label': status.label,
+      'status_description': status.description,
       'monthly_income': monthlyIncome,
-      'total_spent_30_days': totalSpent,
+      'total_spent': totalSpent,
       'needs_spent': needsSpent,
       'wants_spent': wantsSpent,
       'savings_allocated': savingsAllocated,
@@ -82,8 +84,25 @@ class FinancialHealthReport {
   }
 }
 
+/// Puntuación simplificada de asesor financiero
+class FinancialScore {
+  final int score;
+  final String statusLabel;
+  final String description;
+  final bool insufficientData;
+
+  const FinancialScore({
+    required this.score,
+    required this.statusLabel,
+    required this.description,
+    required this.insufficientData,
+  });
+}
+
 /// Motor de Asesoría Financiera Algorítmica basado en la regla 50/30/20
 class FinancialHealthEngine {
+  FinancialHealthEngine._();
+
   static const double defaultIncomeFallback = 1500.0;
 
   // Clasificación de categorías estándar
@@ -105,6 +124,58 @@ class FinancialHealthEngine {
     'Compras',
     'Suscripciones',
   };
+
+  /// Evalúa la puntuación global de salud financiera (método simplificado)
+  static FinancialScore evaluate({
+    required double totalIncome,
+    required double totalExpense,
+    required double totalSaved,
+    required int activeMissionsCount,
+  }) {
+    if (totalIncome <= 0 || totalExpense == 0) {
+      return const FinancialScore(
+        score: 100,
+        statusLabel: 'Excelente',
+        description: 'Tus finanzas están en equilibrio orgánico.',
+        insufficientData: true,
+      );
+    }
+
+    double score = 100.0;
+    final expenseRatio = totalExpense / totalIncome;
+
+    if (expenseRatio > 0.80) {
+      score -= 35;
+    } else if (expenseRatio > 0.50) {
+      score -= 15;
+    }
+
+    if (activeMissionsCount == 0 && totalSaved == 0) {
+      score -= 10;
+    }
+
+    final finalScore = score.clamp(0.0, 100.0).round();
+
+    String status;
+    String desc;
+    if (finalScore >= 80) {
+      status = 'Excelente';
+      desc = 'Tus finanzas están en equilibrio orgánico.';
+    } else if (finalScore >= 50) {
+      status = 'Estable';
+      desc = 'Se sugiere moderar gastos discrecionales este mes.';
+    } else {
+      status = 'Riesgo';
+      desc = 'Tus gastos superan los límites saludables para este ciclo.';
+    }
+
+    return FinancialScore(
+      score: finalScore,
+      statusLabel: status,
+      description: desc,
+      insufficientData: false,
+    );
+  }
 
   /// Calcula el diagnóstico de salud financiera evaluando los últimos 30 días
   static FinancialHealthReport calculate({
@@ -146,7 +217,6 @@ class FinancialHealthEngine {
       if (wantsCategories.contains(cat)) {
         wantsSpent += amt;
       } else {
-        // Por defecto asumimos categoría de necesidad si no es ocio directo
         needsSpent += amt;
       }
     }
@@ -189,7 +259,6 @@ class FinancialHealthEngine {
       calculatedScore = min(100.0, calculatedScore + 5.0);
     }
 
-    // Ajuste de límites [0, 100]
     final score = calculatedScore.clamp(0.0, 100.0).round();
 
     // Determinar estado semafórico
@@ -207,23 +276,22 @@ class FinancialHealthEngine {
 
     if (isOverBudget) {
       tips.add(
-        '⚠️ Alerta: Tus gastos de este mes (S/ ${totalSpent.toStringAsFixed(2)}) superan tus ingresos sugeridos (S/ ${effectiveIncome.toStringAsFixed(2)}). Prioriza sólo necesidades esenciales.',
+        '⚠️ Alerta: Tus gastos de este mes (S/ ' + totalSpent.toStringAsFixed(2) + ') superan tus ingresos sugeridos (S/ ' + effectiveIncome.toStringAsFixed(2) + '). Prioriza sólo necesidades esenciales.',
       );
     }
 
     if (wantsPercentage > 30.0) {
       tips.add(
-        'Tus gastos en Ocio y Deseos (S/ ${wantsSpent.toStringAsFixed(2)}) representan el ${wantsPercentage.toStringAsFixed(0)}% de tus ingresos, superando el 30% sugerido por la regla 50/30/20.',
+        'Tus gastos en Ocio y Deseos (S/ ' + wantsSpent.toStringAsFixed(2) + ') representan el ' + wantsPercentage.toStringAsFixed(0) + '% de tus ingresos, superando el 30% sugerido por la regla 50/30/20.',
       );
     }
 
     if (needsPercentage > 65.0) {
       tips.add(
-        'Tus costos fijos y necesidades básicas consumen el ${needsPercentage.toStringAsFixed(0)}% de tus ingresos. Evalúa renegociar servicios o preparar más comidas en casa.',
+        'Tus costos fijos y necesidades básicas consumen el ' + needsPercentage.toStringAsFixed(0) + '% de tus ingresos. Evalúa renegociar servicios o preparar más comidas en casa.',
       );
     }
 
-    // Consejo sinérgico con la Bóveda de Ahorros
     if (activeMissions.isNotEmpty) {
       final mainMission = activeMissions.first;
       final target = double.tryParse(mainMission['target_amount']?.toString() ?? '0') ?? 0.0;
@@ -233,7 +301,7 @@ class FinancialHealthEngine {
       if (wantsSpent > 0 && remaining > 0) {
         final potentialSaving = min(wantsSpent * 0.35, remaining);
         tips.add(
-          '💡 Consejo Salvia: Si recortas el 35% de tus gastos en Ocio de este mes, podrías acelerar tu meta \'${mainMission['title']}\' sumándole S/ ${potentialSaving.toStringAsFixed(2)}.',
+          '💡 Consejo Salvia: Si recortas el 35% de tus gastos en Ocio de este mes, podrías acelerar tu meta \'' + mainMission['title'].toString() + '\' sumándole S/ ' + potentialSaving.toStringAsFixed(2) + '.',
         );
       }
     } else {

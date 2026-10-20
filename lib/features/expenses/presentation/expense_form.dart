@@ -1,10 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-import '../../../core/theme.dart';
-import '../../../core/providers.dart';
+
+import '../../../core/app_theme.dart';
+import '../application/gestor_gastos.dart';
+import '../domain/expense_category.dart';
+import '../domain/expense_validators.dart';
+
+
+Future<void> showExpenseForm(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    ),
+    builder: (_) => const ExpenseForm(),
+  );
+}
+
 
 class ExpenseForm extends ConsumerStatefulWidget {
   const ExpenseForm({super.key});
@@ -15,114 +32,92 @@ class ExpenseForm extends ConsumerStatefulWidget {
 
 class _ExpenseFormState extends ConsumerState<ExpenseForm> {
   final _formKey = GlobalKey<FormState>();
-  final _amountController = TextEditingController();
-  final _descController = TextEditingController();
-  final _customSubcategoryController = TextEditingController();
+  final _amountCtrl = TextEditingController();
+  final _detailCtrl = TextEditingController();
 
-  String _selectedCategory = 'Comida';
-  String _selectedSubcategory = 'Almuerzo';
-  String _selectedRecurrence = 'once';
-  DateTime _selectedDate = DateTime.now();
-
-  final Map<String, List<String>> _predefinedSubcategories = {
-    'Comida': ['Almuerzo', 'Cena', 'Pollo', 'Supermercado', 'Merienda', 'Otro...'],
-    'Universidad': ['Pensión', 'Libros / Copias', 'Almuerzo Universidad', 'Transporte', 'Otro...'],
-    'Gym': ['Mensualidad', 'Suplementos (Proteína)', 'Ropa Deportiva', 'Otro...'],
-    'Transporte': ['Taxi / Uber', 'Bus', 'Gasolina', 'Mantenimiento', 'Otro...'],
-    'Ocio': ['Cine', 'Salida Amigos', 'Pool / Billar', 'Suscripciones (Netflix)', 'Otro...'],
-    'Otros': ['Servicios', 'Ropa', 'Médico / Salud', 'Otro...'],
-  };
+  ExpenseCategory? _category;
+  String? _categoryError;
+  bool _saving = false;
 
   @override
   void dispose() {
-    _amountController.dispose();
-    _descController.dispose();
-    _customSubcategoryController.dispose();
+    _amountCtrl.dispose();
+    _detailCtrl.dispose();
     super.dispose();
   }
 
-  void _onCategoryChanged(String? category) {
-    if (category == null) return;
-    setState(() {
-      _selectedCategory = category;
-      _selectedSubcategory = _predefinedSubcategories[category]!.first;
-    });
-  }
+  /// [TAREA 7 · S8–S9] Conexión del formulario con el Gestor de Gastos.
+  /// Pasos 4–6 y 14 del diagrama: "Confirmar Registro" → valida →
+  /// agregarGasto(monto, categoria, detalle) → cierra y muestra mensaje.
+  Future<void> _confirmarRegistro() async {
+    // [TAREA 8 · S9–S10] Paso 5: "Valida que los datos sean correctos".
+    final camposOk = _formKey.currentState!.validate();
+    final categoriaError = ExpenseValidators.validateCategory(_category);
+    setState(() => _categoryError = categoriaError);
+    if (!camposOk || categoriaError != null) return;
 
-  void _onSubcategorySelected(String sub) {
-    setState(() {
-      _selectedSubcategory = sub;
-    });
-  }
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    setState(() => _saving = true);
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2025, 1, 1),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      helpText: 'Selecciona la fecha del gasto',
-      cancelText: 'Cancelar',
-      confirmText: 'Aceptar',
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-    await HapticFeedback.mediumImpact();
-
-    final double amount = double.parse(_amountController.text);
-    final String sub = _selectedSubcategory == 'Otro...' 
-        ? _customSubcategoryController.text.trim()
-        : _selectedSubcategory;
-
-    if (sub.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Por favor especifica la subcategoría")),
-        );
-      }
-      return;
-    }
-
-    await ref.read(expensesProvider.notifier).addExpense(
-      amount,
-      _selectedCategory,
-      sub,
-      _descController.text.trim(),
-      date: _selectedDate.toIso8601String(),
-      recurrence: _selectedRecurrence,
-    );
-
-    // Actualizar el asesor
-    ref.read(advisorProvider.notifier).loadReport();
-
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
+    try {
+      await ref.read(gestorGastosProvider.notifier).agregarGasto(
+            monto: ExpenseValidators.parseAmount(_amountCtrl.text),
+            categoria: _category!,
+            detalle: _detailCtrl.text,
+          );
+      HapticFeedback.mediumImpact();
+      navigator.pop();
+      messenger.showSnackBar(
         SnackBar(
-          content: Text("Gasto de $sub registrado con éxito 🍃"),
-          backgroundColor: RusticTheme.primaryGreen,
+          content: const Text('Gasto registrado con éxito 🌿'),
+          backgroundColor: AppColors.brandGreen,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on ExpenseValidationException catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo guardar el gasto. Intenta de nuevo.'),
         ),
       );
     }
   }
 
+  InputDecoration _decoration({required String label, String? hint, String? prefix}) {
+    OutlineInputBorder border(Color color, [double width = 1]) =>
+        OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixText: prefix,
+      filled: true,
+      fillColor: AppColors.background.withValues(alpha: 0.55),
+      enabledBorder: border(AppColors.border),
+      focusedBorder: border(AppColors.brandGreen, 1.6),
+      errorBorder: border(AppColors.danger),
+      focusedErrorBorder: border(AppColors.danger, 1.6),
+      labelStyle: GoogleFonts.outfit(color: AppColors.textMuted),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final subcategories = _predefinedSubcategories[_selectedCategory] ?? [];
-
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 20,
-        right: 20,
-        top: 20,
+        left: 22,
+        right: 22,
+        top: 14,
       ),
       child: Form(
         key: _formKey,
@@ -131,225 +126,135 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Barra de arrastre visual para Bottom Sheet
               Center(
                 child: Container(
-                  width: 48,
+                  width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD4D2CC),
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
               const SizedBox(height: 18),
-              
               Text(
-                "Añadir Gasto",
-                style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: RusticTheme.darkText,
-                ),
+                'Registrar gasto',
+                style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 2),
+              Text(
+                'Anótalo en segundos y cuida tu jardín financiero.',
+                style: GoogleFonts.outfit(fontSize: 13, color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 20),
 
-              // MONTO INPUT
+              // MONTO
               TextFormField(
-                controller: _amountController,
+                controller: _amountCtrl,
+                autofocus: true,
+                enabled: !_saving,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d{0,5}([.,]\d{0,2})?')),
                 ],
-                style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  labelText: "Monto (S/.)",
-                  prefixIcon: const Icon(Icons.payments_outlined, size: 28),
-                  prefixText: "S/. ",
-                  labelStyle: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.normal),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return "Ingresa un monto";
-                  if (double.tryParse(value) == null) return "Monto inválido";
-                  if (double.parse(value) <= 0) return "El monto debe ser mayor a 0";
-                  return null;
-                },
+                style: GoogleFonts.outfit(fontSize: 26, fontWeight: FontWeight.w800),
+                decoration: _decoration(label: 'Monto', hint: '0.00', prefix: 'S/ '),
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: ExpenseValidators.validateAmount,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
-              // CATEGORÍA DROPDOWN
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: "Categoría",
-                  prefixIcon: Icon(Icons.category_outlined),
-                ),
-                items: _predefinedSubcategories.keys.map((String cat) {
-                  return DropdownMenuItem<String>(
-                    value: cat,
-                    child: Text(cat, style: GoogleFonts.outfit()),
-                  );
-                }).toList(),
-                onChanged: _onCategoryChanged,
-              ),
-              const SizedBox(height: 16),
-
-              // SUBCATEGORÍA CHIPS SELECTION
+              // CATEGORÍA
               Text(
-                "Especifique el Gasto:",
+                'Categoría',
                 style: GoogleFonts.outfit(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: RusticTheme.lightText,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted,
                 ),
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                children: subcategories.map((String sub) {
-                  final isSelected = _selectedSubcategory == sub;
+                spacing: 8,
+                runSpacing: 8,
+                children: ExpenseCategory.values.map((cat) {
+                  final selected = _category == cat;
                   return ChoiceChip(
-                    label: Text(sub, style: GoogleFonts.outfit(fontSize: 12.5)),
-                    selected: isSelected,
-                    selectedColor: RusticTheme.primaryGreen.withValues(alpha: 0.18),
+                    avatar: Icon(
+                      cat.icon,
+                      size: 18,
+                      color: selected ? Colors.white : cat.color,
+                    ),
+                    label: Text(cat.label),
+                    selected: selected,
+                    showCheckmark: false,
+                    selectedColor: cat.color,
                     backgroundColor: Colors.white,
-                    side: BorderSide(
-                      color: isSelected ? RusticTheme.primaryGreen : const Color(0xFFE4E2DC),
+                    side: BorderSide(color: selected ? cat.color : AppColors.border),
+                    labelStyle: GoogleFonts.outfit(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? Colors.white : AppColors.textDark,
                     ),
-                    labelStyle: TextStyle(
-                      color: isSelected ? RusticTheme.primaryGreen : RusticTheme.lightText,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                    onSelected: (bool selected) {
-                      if (selected) {
-                        _onSubcategorySelected(sub);
-                      }
-                    },
+                    onSelected: _saving
+                        ? null
+                        : (_) => setState(() {
+                              _category = cat;
+                              _categoryError = null;
+                            }),
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 12),
-
-              // CUSTOM SUBCATEGORY FIELD IF "Otro..." IS SELECTED
-              if (_selectedSubcategory == 'Otro...') ...[
-                TextFormField(
-                  controller: _customSubcategoryController,
-                  decoration: const InputDecoration(
-                    labelText: "¿Qué compraste exactamente? (ej. Pollo a la brasa, Copias de examen)",
-                    prefixIcon: Icon(Icons.edit_note_outlined),
-                  ),
-                  validator: (value) {
-                    if (_selectedSubcategory == 'Otro...' && (value == null || value.trim().isEmpty)) {
-                      return "Escribe la subcategoría específica";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // SELECTOR VISUAL DE FECHA
-              InkWell(
-                onTap: _pickDate,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFD4D2CC)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_month_outlined, color: RusticTheme.primaryGreen, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Fecha del movimiento",
-                              style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                color: RusticTheme.lightText,
-                              ),
-                            ),
-                            Text(
-                              DateFormat('dd/MM/yyyy').format(_selectedDate),
-                              style: GoogleFonts.outfit(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: RusticTheme.darkText,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        "Cambiar",
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: RusticTheme.primaryGreen,
-                        ),
-                      ),
-                    ],
+              if (_categoryError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Text(
+                    _categoryError!,
+                    style: GoogleFonts.outfit(fontSize: 12, color: AppColors.danger),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
-              // RECURRENCIA DROPDOWN
-              DropdownButtonFormField<String>(
-                initialValue: _selectedRecurrence,
-                decoration: const InputDecoration(
-                  labelText: "Recurrencia",
-                  prefixIcon: Icon(Icons.replay),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'once', child: Text("Una sola vez")),
-                  DropdownMenuItem(value: 'daily', child: Text("Diario")),
-                  DropdownMenuItem(value: 'monthly', child: Text("Mensual")),
-                  DropdownMenuItem(value: 'yearly', child: Text("Anual")),
-                ],
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedRecurrence = val;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // DESCRIPCIÓN (OPCIONAL)
+              // DETALLE / NOTAS
               TextFormField(
-                controller: _descController,
-                decoration: const InputDecoration(
-                  labelText: "Notas / Detalles (Opcional)",
-                  prefixIcon: Icon(Icons.notes_outlined),
+                controller: _detailCtrl,
+                enabled: !_saving,
+                maxLength: ExpenseValidators.maxDetailLength,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: _decoration(
+                  label: 'Notas (opcional)',
+                  hint: 'Ej. Menú del día, pasaje a la UTP',
+                ),
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: (v) => ExpenseValidators.validateDetail(v, category: _category),
+              ),
+              const SizedBox(height: 8),
+
+              // CONFIRMAR
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _confirmarRegistro,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.actionGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                        )
+                      : Text(
+                          'Confirmar Registro',
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
-
-              // BOTÓN REGISTRAR
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: RusticTheme.primaryGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: Text(
-                    "Confirmar Registro",
-                    style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
             ],
           ),
         ),
