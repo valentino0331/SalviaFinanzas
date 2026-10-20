@@ -305,6 +305,22 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6F3),
+      floatingActionButton: FloatingActionButton.extended(
+        key: const Key('btn_nueva_meta_ahorro'),
+        onPressed: _showAddMissionDialog,
+        backgroundColor: const Color(0xFF285038),
+        foregroundColor: Colors.white,
+        elevation: 4,
+        icon: const Icon(Icons.add_task_rounded, size: 20),
+        label: Text(
+          'Nueva Meta',
+          style: GoogleFonts.outfit(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
       body: SafeArea(
         child: savingsRaw.when(
           loading: () => const Center(child: CircularProgressIndicator(color: RusticTheme.primaryGreen)),

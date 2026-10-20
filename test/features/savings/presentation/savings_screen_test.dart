@@ -101,5 +101,29 @@ void main() {
       expect(find.text('Aun no hay metas de ahorro'), findsOneWidget);
       expect(find.text('Crear meta de ahorro'), findsOneWidget);
     });
+
+    testWidgets('renders FloatingActionButton and opens add mission dialog on tap', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            savingsProvider.overrideWith((ref) => MockSavingsNotifier([])),
+          ],
+          child: const MaterialApp(
+            home: SavingsScreen(),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      final fab = find.byKey(const Key('btn_nueva_meta_ahorro'));
+      expect(fab, findsOneWidget);
+      expect(find.text('Nueva Meta'), findsOneWidget);
+
+      await tester.tap(fab);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nueva Meta de Ahorro'), findsOneWidget);
+    });
   });
 }
