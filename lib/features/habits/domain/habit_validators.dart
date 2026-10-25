@@ -1,4 +1,4 @@
-/// Error de validación lanzado al intentar crear un hábito con datos inválidos.
+/// Error de validación lanzado al crear o editar un hábito con datos inválidos.
 class HabitValidationException implements Exception {
   HabitValidationException(this.message);
 
@@ -30,6 +30,13 @@ class HabitValidators {
     }
     if (text.length > maxTitleLength) {
       return 'Máximo $maxTitleLength caracteres';
+    }
+    return null;
+  }
+
+  static String? validateDescription(String? raw) {
+    if ((raw ?? '').trim().length > maxDescriptionLength) {
+      return 'Máximo $maxDescriptionLength caracteres';
     }
     return null;
   }
