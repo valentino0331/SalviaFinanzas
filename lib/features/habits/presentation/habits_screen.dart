@@ -7,6 +7,7 @@ import '../../../core/providers.dart';
 import '../application/habits_providers.dart';
 import '../domain/habit_template.dart';
 import 'dialogs/add_habit_dialog.dart';
+import 'dialogs/delete_habit_dialog.dart';
 import 'dialogs/habit_completed_dialog.dart';
 import 'widgets/habits_top_bar.dart';
 import 'widgets/hero_habits_card.dart';
@@ -157,6 +158,7 @@ class HabitsScreen extends ConsumerWidget {
                           enabled: pending.isEmpty,
                           isBusy: pending.contains(habit.id),
                           onEdit: () => showEditHabitDialog(context, habit),
+                          onDelete: () => showDeleteHabitDialog(context, habit),
                           onTap: habit.isCompletedToday
                               ? null
                               : () => _completeHabit(

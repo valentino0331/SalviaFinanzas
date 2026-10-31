@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../domain/habit.dart';
 
-enum HabitCardAction { edit }
+enum HabitCardAction { edit, delete }
 
 class HabitCard extends StatelessWidget {
   const HabitCard({
@@ -11,6 +11,7 @@ class HabitCard extends StatelessWidget {
     required this.habit,
     this.onTap,
     this.onEdit,
+    this.onDelete,
     this.isBusy = false,
     this.enabled = true,
   });
@@ -18,6 +19,7 @@ class HabitCard extends StatelessWidget {
   final Habit habit;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final bool isBusy;
   final bool enabled;
 
@@ -100,7 +102,7 @@ class HabitCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (onEdit != null)
+                if (onEdit != null || onDelete != null)
                   PopupMenuButton<HabitCardAction>(
                     tooltip: 'Opciones de ${habit.title}',
                     enabled: enabled && !isBusy,
@@ -108,19 +110,43 @@ class HabitCard extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 140),
                     onSelected: (action) {
-                      if (action == HabitCardAction.edit) onEdit?.call();
+                      switch (action) {
+                        case HabitCardAction.edit:
+                          onEdit?.call();
+                        case HabitCardAction.delete:
+                          onDelete?.call();
+                      }
                     },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
-                        value: HabitCardAction.edit,
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_outlined, size: 18),
-                            SizedBox(width: 10),
-                            Text('Editar'),
-                          ],
+                    itemBuilder: (_) => [
+                      if (onEdit != null)
+                        const PopupMenuItem(
+                          value: HabitCardAction.edit,
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 18),
+                              SizedBox(width: 10),
+                              Text('Editar'),
+                            ],
+                          ),
                         ),
-                      ),
+                      if (onDelete != null)
+                        const PopupMenuItem(
+                          value: HabitCardAction.delete,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: Color(0xFFD94841),
+                              ),
+                              SizedBox(width: 10),
+                              Text(
+                                'Eliminar',
+                                style: TextStyle(color: Color(0xFFD94841)),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
               ],
