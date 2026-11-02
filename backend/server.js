@@ -378,7 +378,7 @@ app.get('/api/habits', async (req, res) => {
     return res.json(userHabits);
   } else {
     try {
-      const habitsRes = await pool.query('SELECT * FROM habits WHERE user_id = $1 ORDER BY created_at ASC', [userId]);
+      const habitsRes = await pool.query('SELECT *, last_completed_at::text AS last_completed_at FROM habits WHERE user_id = $1 ORDER BY created_at ASC', [userId]);
       return res.json(habitsRes.rows);
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -421,11 +421,15 @@ app.post('/api/habits', async (req, res) => {
 
 // Marcar hábito como completado (Suma puntos y maneja rachas)
 app.post('/api/habits/:id/complete', async (req, res) => {
-  const habitId = parseInt(req.params.id);
+  const habitId = Number(req.params.id);
+  if (!Number.isSafeInteger(habitId) || habitId <= 0) {
+    return res.status(400).json({ error: "ID de hábito inválido" });
+  }
   const userId = await getUserId(req);
-  const todayStr = localDateStr();
 
   if (useMockDb) {
+    const completionTime = new Date();
+    const todayStr = localDateStr(completionTime);
     const habit = mockDb.habits.find(h => h.id === habitId && h.user_id === userId);
     if (!habit) return res.status(404).json({ error: "Hábito no encontrado" });
 
@@ -434,7 +438,7 @@ app.post('/api/habits/:id/complete', async (req, res) => {
     }
 
     // Calcular racha (día anterior en hora local)
-    const yesterdayStr = localDateStr(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    const yesterdayStr = localDateStr(new Date(completionTime.getTime() - 24 * 60 * 60 * 1000));
 
     if (habit.last_completed_at === yesterdayStr) {
       habit.streak += 1;
@@ -466,21 +470,34 @@ app.post('/api/habits/:id/complete', async (req, res) => {
 
     return res.json({ habit, points_awarded: pts, current_user_points: user ? user.points : 0 });
   } else {
+    let client;
     try {
-      const hRes = await pool.query('SELECT * FROM habits WHERE id = $1 AND user_id = $2', [habitId, userId]);
-      if (hRes.rows.length === 0) return res.status(404).json({ error: "Hábito no encontrado" });
+      client = await pool.connect();
+      await client.query('BEGIN');
+      // El bloqueo serializa completados del mismo hábito, incluso desde dos dispositivos.
+      const hRes = await client.query(
+        'SELECT *, last_completed_at::text AS last_completed_at FROM habits WHERE id = $1 AND user_id = $2 FOR UPDATE',
+        [habitId, userId]
+      );
+      if (hRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: "Hábito no encontrado" });
+      }
 
       const habit = hRes.rows[0];
-      if (habit.last_completed_at && new Date(habit.last_completed_at).toISOString().split('T')[0] === todayStr) {
+      // Se fija el día después de obtener el bloqueo, por si la espera cruzó medianoche.
+      const completionTime = new Date();
+      const todayStr = localDateStr(completionTime);
+      if (habit.last_completed_at === todayStr) {
+        await client.query('ROLLBACK');
         return res.status(400).json({ error: "Este hábito ya se completó hoy" });
       }
 
       // Evaluar racha (día anterior en hora local)
-      const yesterdayStr = localDateStr(new Date(Date.now() - 24 * 60 * 60 * 1000));
-      const lastCompletedStr = habit.last_completed_at ? new Date(habit.last_completed_at).toISOString().split('T')[0] : null;
+      const yesterdayStr = localDateStr(new Date(completionTime.getTime() - 24 * 60 * 60 * 1000));
 
       let newStreak = 1;
-      if (lastCompletedStr === yesterdayStr) {
+      if (habit.last_completed_at === yesterdayStr) {
         newStreak = parseInt(habit.streak) + 1;
       }
 
@@ -488,30 +505,41 @@ app.post('/api/habits/:id/complete', async (req, res) => {
       if (newStreak % 5 === 0) pts += 15; // Bono racha
 
       // Actualizar hábito
-      const updateHabitRes = await pool.query(
-        'UPDATE habits SET streak = $1, last_completed_at = $2 WHERE id = $3 RETURNING *',
-        [newStreak, todayStr, habitId]
+      const updateHabitRes = await client.query(
+        'UPDATE habits SET streak = $1, last_completed_at = $2 WHERE id = $3 AND user_id = $4 RETURNING *, last_completed_at::text AS last_completed_at',
+        [newStreak, todayStr, habitId, userId]
       );
 
       // Actualizar usuario
-      const updateUserRes = await pool.query(
+      const updateUserRes = await client.query(
         'UPDATE users SET points = points + $1, streak = GREATEST(streak, $2) WHERE id = $3 RETURNING *',
         [pts, newStreak, userId]
       );
 
       // Insertar historial de puntos
-      await pool.query(
+      await client.query(
         'INSERT INTO user_points_history (user_id, points, reason) VALUES ($1, $2, $3)',
         [userId, pts, `Completó hábito: ${habit.title} (Racha ${newStreak})`]
       );
 
+      await client.query('COMMIT');
       return res.json({
         habit: updateHabitRes.rows[0],
         points_awarded: pts,
         current_user_points: updateUserRes.rows[0].points
       });
     } catch (err) {
-      return res.status(500).json({ error: err.message });
+      if (client) {
+        try {
+          await client.query('ROLLBACK');
+        } catch (rollbackError) {
+          console.error("Error al revertir completado de hábito:", rollbackError.message);
+        }
+      }
+      console.error("Error al completar hábito:", err.message);
+      return res.status(500).json({ error: "No se pudo completar el hábito" });
+    } finally {
+      if (client) client.release();
     }
   }
 });
@@ -694,7 +722,7 @@ app.put('/api/habits/:id', async (req, res) => {
     }
 
     const result = await pool.query(
-      'UPDATE habits SET title = $1, description = $2, points_reward = $3 WHERE id = $4 AND user_id = $5 RETURNING *',
+      'UPDATE habits SET title = $1, description = $2, points_reward = $3 WHERE id = $4 AND user_id = $5 RETURNING *, last_completed_at::text AS last_completed_at',
       [changes.title, changes.description, changes.points_reward, habitId, userId]
     );
     if (result.rowCount === 0) return res.status(404).json({ error: "Hábito no encontrado" });
