@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api_service.dart';
 import '../domain/habit.dart';
+import '../domain/habit_calendar.dart';
 
 class HabitsApiException implements Exception {
   const HabitsApiException(this.message);
@@ -21,9 +22,11 @@ class HabitsApiException implements Exception {
 /// En modo local, la colección pertenece a esta feature y está separada por
 /// usuario. Así un refresco o una escritura de core no resucita hábitos borrados.
 class HabitsApi {
-  HabitsApi(this._client);
+  HabitsApi(this._client, {DateTime Function()? now})
+    : _now = now ?? DateTime.now;
 
   final http.Client _client;
+  final DateTime Function() _now;
 
   Future<List<Habit>> getHabits() async {
     final source = await ApiService.getHabits();
@@ -86,11 +89,11 @@ class HabitsApi {
     final rows = await _readLocalHabits();
     final index = _findHabit(rows, id);
     final habit = Habit.fromMap(rows[index]);
-    final now = DateTime.now();
-    if (habit.isCompletedOn(now)) {
+    final today = HabitCalendar.dayFor(_now());
+    if (habit.isCompletedOn(today)) {
       throw const HabitsApiException('Este hábito ya se completó hoy');
     }
-    final streak = habit.isCompletedOn(now.subtract(const Duration(days: 1)))
+    final streak = habit.isCompletedOn(today.subtract(const Duration(days: 1)))
         ? habit.streak + 1
         : 1;
     final points = habit.pointsReward + (streak % 5 == 0 ? 15 : 0);
@@ -105,7 +108,7 @@ class HabitsApi {
     rows[index] = {
       ...rows[index],
       'streak': streak,
-      'last_completed_at': now.toIso8601String().split('T').first,
+      'last_completed_at': today.toIso8601String().split('T').first,
     };
 
     await _writeLocalHabits(rows);

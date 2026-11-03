@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../domain/habit.dart';
+import '../../domain/habit_calendar.dart';
 
 enum HabitCardAction { edit, delete }
 
@@ -14,6 +15,7 @@ class HabitCard extends StatelessWidget {
     this.onDelete,
     this.isBusy = false,
     this.enabled = true,
+    this.day,
   });
 
   final Habit habit;
@@ -22,11 +24,13 @@ class HabitCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final bool isBusy;
   final bool enabled;
+  final DateTime? day;
 
   @override
   Widget build(BuildContext context) {
-    final isCompletedToday = habit.isCompletedToday;
-    final int streak = habit.streak;
+    final today = day ?? HabitCalendar.today();
+    final isCompletedToday = habit.isCompletedOn(today);
+    final int streak = habit.streakOn(today);
     final int pts = habit.pointsReward;
 
     return InkWell(

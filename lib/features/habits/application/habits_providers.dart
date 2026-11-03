@@ -1,15 +1,33 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../core/providers.dart';
 import '../data/habits_api.dart';
 import '../domain/habit.dart';
+import '../domain/habit_calendar.dart';
 import '../domain/habit_validators.dart';
+
+final habitsClockProvider = Provider<DateTime Function()>(
+  (ref) => DateTime.now,
+);
 
 final habitsApiProvider = Provider<HabitsApi>((ref) {
   final client = http.Client();
   ref.onDispose(client.close);
-  return HabitsApi(client);
+  return HabitsApi(client, now: ref.watch(habitsClockProvider));
+});
+
+/// Reconstruye la pantalla al llegar la medianoche de Perú, sin hacer peticiones.
+final habitsTodayProvider = Provider.autoDispose<DateTime>((ref) {
+  final now = ref.watch(habitsClockProvider)();
+  final timer = Timer(
+    HabitCalendar.nextMidnight(now).difference(now.toUtc()),
+    ref.invalidateSelf,
+  );
+  ref.onDispose(timer.cancel);
+  return HabitCalendar.dayFor(now);
 });
 
 final habitsPendingProvider = StateProvider<Set<int>>((ref) {
