@@ -1,7 +1,7 @@
 ﻿/// Modelo de dominio para una misión (meta) de ahorro.
 ///
-/// Centraliza toda la lógica de cálculo de progreso, proyección temporal
-/// y estados de la meta en un único lugar autorizado.
+/// Centraliza toda la lógica de cálculo de progreso, proyección temporal,
+/// asesoramiento inteligente y estados colaborativos/multi-usuario.
 class SavingsMission {
   final int id;
   final String title;
@@ -10,6 +10,9 @@ class SavingsMission {
   final String? iconName;
   final String? deadline; // ISO8601 date string, e.g. "2026-12-31"
   final bool isCompleted;
+  final bool isShared;
+  final List<String> collaborators;
+  final String? category;
 
   const SavingsMission({
     required this.id,
@@ -19,24 +22,50 @@ class SavingsMission {
     this.iconName,
     this.deadline,
     required this.isCompleted,
+    this.isShared = false,
+    this.collaborators = const [],
+    this.category,
   });
 
   // ── Fábrica ──────────────────────────────────────────────────────────────
 
   /// Construye un [SavingsMission] desde el mapa JSON que devuelve la API.
   factory SavingsMission.fromMap(Map<String, dynamic> map) {
-    final cur = double.tryParse(map['current_amount']?.toString() ?? '0') ?? 0.0;
-    final tgt = double.tryParse(map['target_amount']?.toString() ?? '0') ?? 0.0;
+    // Protección contra valores no numéricos, comas o formatos inconsistentes
+    final rawCur = map['current_amount']?.toString().replaceAll(',', '.') ?? '0';
+    final rawTgt = map['target_amount']?.toString().replaceAll(',', '.') ?? '0';
+    final cur = double.tryParse(rawCur) ?? 0.0;
+    final tgt = double.tryParse(rawTgt) ?? 0.0;
     final completed = map['is_completed'] == true || (tgt > 0 && cur >= tgt);
 
+    // Parseo de colaboradores
+    List<String> parsedCollaborators = [];
+    if (map['collaborators'] is List) {
+      parsedCollaborators = (map['collaborators'] as List)
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    } else if (map['collaborators'] is String && (map['collaborators'] as String).isNotEmpty) {
+      parsedCollaborators = (map['collaborators'] as String)
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+
+    final isSharedGoal = map['is_shared'] == true || parsedCollaborators.isNotEmpty;
+
     return SavingsMission(
-      id: map['id'] as int,
-      title: (map['title'] as String?) ?? 'Meta de ahorro',
-      targetAmount: tgt,
-      currentAmount: cur,
+      id: (map['id'] is int) ? map['id'] as int : int.tryParse(map['id']?.toString() ?? '0') ?? 0,
+      title: (map['title'] as String?)?.trim() ?? 'Meta de ahorro',
+      targetAmount: tgt > 0 ? tgt : 0.0,
+      currentAmount: cur > 0 ? cur : 0.0,
       iconName: map['icon_name'] as String?,
       deadline: map['deadline'] as String?,
       isCompleted: completed,
+      isShared: isSharedGoal,
+      collaborators: parsedCollaborators,
+      category: map['category'] as String?,
     );
   }
 
@@ -49,11 +78,14 @@ class SavingsMission {
         if (iconName != null) 'icon_name': iconName,
         if (deadline != null) 'deadline': deadline,
         'is_completed': isCompleted,
+        'is_shared': isShared,
+        if (collaborators.isNotEmpty) 'collaborators': collaborators,
+        if (category != null) 'category': category,
       };
 
   // ── Cálculos de dominio ──────────────────────────────────────────────────
 
-  /// Porcentaje de progreso entre 0.0 y 1.0.
+  /// Porcentaje de progreso entre 0.0 y 1.0. Blindado contra división por cero.
   double get progressFraction =>
       targetAmount > 0 ? (currentAmount / targetAmount).clamp(0.0, 1.0) : 0.0;
 
@@ -62,6 +94,17 @@ class SavingsMission {
 
   /// Monto restante para completar la meta (nunca negativo).
   double get remainingAmount => (targetAmount - currentAmount).clamp(0.0, double.infinity);
+
+  /// Devuelve cuántos días completos faltan hasta [deadline].
+  /// Retorna null si no hay fecha límite y 0 si ya expiró.
+  int? get daysRemaining {
+    if (deadline == null) return null;
+    final due = DateTime.tryParse(deadline!);
+    if (due == null) return null;
+    final now = DateTime.now();
+    if (due.isBefore(now)) return 0;
+    return due.difference(now).inDays;
+  }
 
   /// Devuelve cuántos meses completos faltan hasta [deadline].
   /// Retorna null si no hay fecha límite o si ya pasó.
@@ -81,8 +124,16 @@ class SavingsMission {
   double? get monthlySavingRequired {
     if (isCompleted) return null;
     final months = monthsRemaining;
-    if (months == null || months == 0) return null;
+    if (months == null || months <= 0) return null;
     return remainingAmount / months;
+  }
+
+  /// Monto diario sugerido para completar la meta a tiempo.
+  double? get dailySavingSuggested {
+    if (isCompleted) return null;
+    final days = daysRemaining;
+    if (days == null || days <= 0) return null;
+    return remainingAmount / days;
   }
 
   /// Fecha límite parseada como DateTime. null si no aplica.
@@ -96,6 +147,49 @@ class SavingsMission {
     return PlantState.seed;
   }
 
+  /// Recomendación contextual inteligente calculada localmente.
+  String get smartAdvice {
+    if (isCompleted) {
+      return '¡Meta florecida! Has cumplido tu objetivo con éxito. ¡Felicitaciones!';
+    }
+    if (progressFraction >= 0.85) {
+      return '¡Estás en la recta final! Te falta solo el ${(100 - progressPercent)}% para completar tu meta.';
+    }
+    if (daysRemaining != null && daysRemaining! > 0) {
+      final daily = dailySavingSuggested?.toStringAsFixed(2) ?? '0.00';
+      final monthly = monthlySavingRequired?.toStringAsFixed(2) ?? '0.00';
+      return 'Para florecer a tiempo, ahorra aprox. S/ $daily al día (S/ $monthly al mes).';
+    }
+    return 'Paso a paso: cada sol que apartas hace crecer tu semilla de ahorro.';
+  }
+
+  /// Crea una copia inmutable modificando campos específicos.
+  SavingsMission copyWith({
+    int? id,
+    String? title,
+    double? targetAmount,
+    double? currentAmount,
+    String? iconName,
+    String? deadline,
+    bool? isCompleted,
+    bool? isShared,
+    List<String>? collaborators,
+    String? category,
+  }) {
+    return SavingsMission(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      targetAmount: targetAmount ?? this.targetAmount,
+      currentAmount: currentAmount ?? this.currentAmount,
+      iconName: iconName ?? this.iconName,
+      deadline: deadline ?? this.deadline,
+      isCompleted: isCompleted ?? this.isCompleted,
+      isShared: isShared ?? this.isShared,
+      collaborators: collaborators ?? this.collaborators,
+      category: category ?? this.category,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) || (other is SavingsMission && other.id == id);
@@ -105,7 +199,7 @@ class SavingsMission {
 
   @override
   String toString() =>
-      'SavingsMission(id: $id, title: $title, progress: $progressPercent%)';
+      'SavingsMission(id: $id, title: $title, progress: $progressPercent%, shared: $isShared)';
 }
 
 // ── Enumeración de estado de planta ────────────────────────────────────────
