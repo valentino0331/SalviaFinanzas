@@ -94,8 +94,25 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen>
           loading: () => const Center(
             child: CircularProgressIndicator(color: RusticTheme.primaryGreen),
           ),
-          error: (err, _) =>
-              Center(child: Text("Error al cargar hábitos: $err")),
+          error: (err, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Error al cargar hábitos: $err",
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => ref.read(habitsActionsProvider).refresh(),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            ),
+          ),
           data: (habits) {
             final activeTitles = habits.map((h) => h.title).toSet();
             final pendingRecommendations = habitTemplates

@@ -54,9 +54,14 @@ class HabitsController extends StateNotifier<AsyncValue<List<Habit>>> {
   Future<void> refresh() async {
     if (_ref.read(habitsPendingProvider).isNotEmpty) return;
     final revision = ++_revision;
+    if (!state.hasValue) state = const AsyncValue.loading();
     try {
       final habits = await _api.getHabits();
-      if (mounted && revision == _revision) state = AsyncValue.data(habits);
+      final points = await _api.getLocalPoints();
+      if (mounted && revision == _revision) {
+        state = AsyncValue.data(habits);
+        if (points != null) _syncPoints(points);
+      }
     } catch (error, stack) {
       if (mounted && revision == _revision) {
         state = AsyncValue.error(error, stack);
@@ -76,6 +81,19 @@ class HabitsController extends StateNotifier<AsyncValue<List<Habit>>> {
     ++_revision;
     _ref.read(habitsPendingProvider.notifier).state = {id};
     try {
+      final recoveredPoints = await _api.recoverPendingCompletion();
+      if (recoveredPoints != null && mounted) {
+        final habits = await _api.getHabits();
+        if (mounted) {
+          state = AsyncValue.data(habits);
+          _syncPoints(recoveredPoints);
+        }
+      }
+      if (!mounted) {
+        throw const HabitsApiException(
+          'La sesión cambió. Vuelve a abrir hábitos.',
+        );
+      }
       return await action();
     } finally {
       if (mounted) _ref.read(habitsPendingProvider.notifier).state = {};
@@ -87,6 +105,12 @@ class HabitsController extends StateNotifier<AsyncValue<List<Habit>>> {
     state = AsyncValue.data(
       state.requireValue.map((h) => h.id == habit.id ? habit : h).toList(),
     );
+  }
+
+  void _syncPoints(int points) {
+    if (_ref.read(authProvider).user?['points'] == points) return;
+    _ref.read(authProvider.notifier).updateLocalPoints(points);
+    _ref.invalidate(leaderboardProvider);
   }
 
   Future<void> addHabit(Map<String, dynamic> data) => _mutate(0, () async {
