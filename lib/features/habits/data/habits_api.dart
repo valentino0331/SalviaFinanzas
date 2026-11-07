@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/api_service.dart';
 import '../domain/habit.dart';
 import '../domain/habit_calendar.dart';
-import '../domain/habit_validators.dart';
+import '../domain/habit_rewards.dart';
 
 class HabitsApiException implements Exception {
   const HabitsApiException(this.message);
@@ -42,6 +42,7 @@ class HabitsApi {
   }
 
   Future<Habit> addHabit(Map<String, dynamic> changes) async {
+    changes = {...changes, 'points_reward': HabitRewards.basePoints};
     if (!ApiService.isOffline) {
       return Habit.fromMap(await _request('POST', '/habits', changes));
     }
@@ -68,6 +69,7 @@ class HabitsApi {
   }
 
   Future<Habit> updateHabit(int id, Map<String, dynamic> changes) async {
+    changes = {...changes, 'points_reward': HabitRewards.basePoints};
     if (!ApiService.isOffline) {
       return Habit.fromMap(await _request('PUT', '/habits/$id', changes));
     }
@@ -109,7 +111,7 @@ class HabitsApi {
           habit.isCompletedOn(today.subtract(const Duration(days: 1)))
           ? habit.streak + 1
           : 1;
-      final points = habit.pointsReward + (streak % 5 == 0 ? 15 : 0);
+      final points = HabitRewards.pointsForStreak(streak);
       final user = await ApiService.getProfile();
       if (user == null) {
         throw const HabitsApiException('Inicia sesión para completar hábitos');
@@ -192,7 +194,8 @@ class HabitsApi {
           (pending['streak'] as int) <= 0 ||
           pending['points_awarded'] is! int ||
           (pending['points_awarded'] as int) <= 0 ||
-          (pending['points_awarded'] as int) > HabitValidators.maxPoints + 15 ||
+          (pending['points_awarded'] as int) >
+              HabitRewards.maxLegacyPendingPoints ||
           date is! String ||
           date.length != 10 ||
           DateTime.tryParse(date)?.toIso8601String().split('T').first != date) {

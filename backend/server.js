@@ -16,6 +16,11 @@ const TZ_OFFSET_MS = -5 * 60 * 60 * 1000;
 const localDateStr = (date = new Date()) =>
   new Date(date.getTime() + TZ_OFFSET_MS).toISOString().split('T')[0];
 
+const HABIT_BASE_POINTS = 10;
+const HABIT_STREAK_BONUS = 15;
+const HABIT_BONUS_INTERVAL = 7;
+const habitResponse = habit => ({ ...habit, points_reward: HABIT_BASE_POINTS });
+
 // Configuración de PostgreSQL en Neon
 let pool = null;
 let useMockDb = false;
@@ -57,10 +62,10 @@ const mockDb = {
     { id: 3, user_id: "google_mock_123", title: "Fondo de Ahorro para Viaje", target_amount: 600.00, current_amount: 600.00, deadline: "2026-07-20", icon_name: "flight", is_completed: true }
   ],
   habits: [
-    { id: 1, user_id: "google_mock_123", title: "Levantarme a las 6:00 AM", description: "Aprovechar las primeras horas del día.", points_reward: 15, streak: 3, last_completed_at: localDateStr(new Date(Date.now() - 3600000 * 24)) },
+    { id: 1, user_id: "google_mock_123", title: "Levantarme a las 6:00 AM", description: "Aprovechar las primeras horas del día.", points_reward: HABIT_BASE_POINTS, streak: 3, last_completed_at: localDateStr(new Date(Date.now() - 3600000 * 24)) },
     { id: 2, user_id: "google_mock_123", title: "Comer en casa (No Restaurante)", description: "Cocinar almuerzo o cena para ahorrar.", points_reward: 10, streak: 1, last_completed_at: null },
     { id: 3, user_id: "google_mock_123", title: "Registrar gastos diarios", description: "Ingresar todo lo gastado antes de dormir.", points_reward: 10, streak: 5, last_completed_at: localDateStr() },
-    { id: 4, user_id: "google_mock_123", title: "Ahorrar S/. 10 diarios", description: "Pasar S/. 10 directamente a tu alcancía.", points_reward: 20, streak: 0, last_completed_at: null }
+    { id: 4, user_id: "google_mock_123", title: "Ahorrar S/. 10 diarios", description: "Pasar S/. 10 directamente a tu alcancía.", points_reward: HABIT_BASE_POINTS, streak: 0, last_completed_at: null }
   ],
   user_points_history: []
 };
@@ -123,10 +128,10 @@ app.post('/api/auth/google', async (req, res) => {
       
       // Crear algunos hábitos por defecto
       const defaultHabits = [
-        ["Levantarme a las 6:00 AM", "Aprovechar las primeras horas del día.", 15],
-        ["Comer en casa (No Restaurante)", "Cocinar almuerzo o cena para ahorrar.", 10],
-        ["Registrar gastos diarios", "Ingresar todo lo gastado antes de dormir.", 10],
-        ["Ahorrar $5 dólares diarios", "Pasar $5 directamente a tu alcancía.", 20]
+        ["Levantarme a las 6:00 AM", "Aprovechar las primeras horas del día.", HABIT_BASE_POINTS],
+        ["Comer en casa (No Restaurante)", "Cocinar almuerzo o cena para ahorrar.", HABIT_BASE_POINTS],
+        ["Registrar gastos diarios", "Ingresar todo lo gastado antes de dormir.", HABIT_BASE_POINTS],
+        ["Ahorrar $5 dólares diarios", "Pasar $5 directamente a tu alcancía.", HABIT_BASE_POINTS]
       ];
       for (const h of defaultHabits) {
         await pool.query('INSERT INTO habits (user_id, title, description, points_reward) VALUES ($1, $2, $3, $4)', [id, h[0], h[1], h[2]]);
@@ -375,11 +380,11 @@ app.get('/api/habits', async (req, res) => {
   const userId = await getUserId(req);
   if (useMockDb) {
     const userHabits = mockDb.habits.filter(h => h.user_id === userId);
-    return res.json(userHabits);
+    return res.json(userHabits.map(habitResponse));
   } else {
     try {
       const habitsRes = await pool.query('SELECT *, last_completed_at::text AS last_completed_at FROM habits WHERE user_id = $1 ORDER BY created_at ASC', [userId]);
-      return res.json(habitsRes.rows);
+      return res.json(habitsRes.rows.map(habitResponse));
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -389,14 +394,14 @@ app.get('/api/habits', async (req, res) => {
 // Crear nuevo hábito personalizado
 app.post('/api/habits', async (req, res) => {
   const userId = await getUserId(req);
-  const { title, description, points_reward } = req.body;
+  const { title, description } = req.body;
 
   if (!title) return res.status(400).json({ error: "El título es obligatorio" });
 
   const newHabit = {
     title,
     description: description || "",
-    points_reward: points_reward ? parseInt(points_reward) : 10,
+    points_reward: HABIT_BASE_POINTS,
     streak: 0,
     last_completed_at: null
   };
@@ -450,10 +455,10 @@ app.post('/api/habits/:id/complete', async (req, res) => {
 
     // Sumar puntos
     const user = mockDb.users.find(u => u.id === userId);
-    let pts = habit.points_reward;
-    // Multiplicador por racha cada 5 días
-    if (habit.streak % 5 === 0) {
-      pts += 15; // Bono de racha
+    let pts = HABIT_BASE_POINTS;
+    // Bono por cada semana consecutiva completada.
+    if (habit.streak % HABIT_BONUS_INTERVAL === 0) {
+      pts += HABIT_STREAK_BONUS;
     }
     
     if (user) {
@@ -468,7 +473,7 @@ app.post('/api/habits/:id/complete', async (req, res) => {
       created_at: new Date().toISOString()
     });
 
-    return res.json({ habit, points_awarded: pts, current_user_points: user ? user.points : 0 });
+    return res.json({ habit: habitResponse(habit), points_awarded: pts, current_user_points: user ? user.points : 0 });
   } else {
     let client;
     try {
@@ -501,8 +506,8 @@ app.post('/api/habits/:id/complete', async (req, res) => {
         newStreak = parseInt(habit.streak) + 1;
       }
 
-      let pts = habit.points_reward;
-      if (newStreak % 5 === 0) pts += 15; // Bono racha
+      let pts = HABIT_BASE_POINTS;
+      if (newStreak % HABIT_BONUS_INTERVAL === 0) pts += HABIT_STREAK_BONUS;
 
       // Actualizar hábito
       const updateHabitRes = await client.query(
@@ -524,7 +529,7 @@ app.post('/api/habits/:id/complete', async (req, res) => {
 
       await client.query('COMMIT');
       return res.json({
-        habit: updateHabitRes.rows[0],
+        habit: habitResponse(updateHabitRes.rows[0]),
         points_awarded: pts,
         current_user_points: updateUserRes.rows[0].points
       });
@@ -696,7 +701,7 @@ app.get('/api/health', (req, res) => {
 // Editar únicamente los datos configurables; no reinicia rachas ni premios.
 app.put('/api/habits/:id', async (req, res) => {
   const habitId = Number(req.params.id);
-  const { title, description = '', points_reward } = req.body || {};
+  const { title, description = '' } = req.body || {};
 
   if (!Number.isSafeInteger(habitId) || habitId <= 0) {
     return res.status(400).json({ error: "ID de hábito inválido" });
@@ -707,13 +712,9 @@ app.put('/api/habits/:id', async (req, res) => {
   if (typeof description !== 'string' || description.trim().length > 80) {
     return res.status(400).json({ error: "La descripción debe tener como máximo 80 caracteres" });
   }
-  if (!Number.isInteger(points_reward) || points_reward < 1 || points_reward > 999) {
-    return res.status(400).json({ error: "Los puntos deben ser un entero entre 1 y 999" });
-  }
-
   try {
     const userId = await getUserId(req);
-    const changes = { title: title.trim(), description: description.trim(), points_reward };
+    const changes = { title: title.trim(), description: description.trim(), points_reward: HABIT_BASE_POINTS };
     if (useMockDb) {
       const habit = mockDb.habits.find(h => h.id === habitId && h.user_id === userId);
       if (!habit) return res.status(404).json({ error: "Hábito no encontrado" });

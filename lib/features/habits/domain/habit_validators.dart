@@ -19,7 +19,7 @@ class HabitValidators {
   static const int maxTitleLength = 40;
   static const int maxDescriptionLength = 80;
   static const int maxPoints = 999;
-  static const int defaultPoints = 15;
+  static const int defaultPoints = 10;
 
   /// Valida el nombre del hábito. Devuelve null si es válido.
   static String? validateTitle(String? raw) {

@@ -1,4 +1,5 @@
 import 'habit_calendar.dart';
+import 'habit_rewards.dart';
 
 /// Modelo de dominio inmutable que representa un hábito diario del usuario.
 ///
@@ -30,7 +31,7 @@ class Habit {
       id: (map['id'] as num?)?.toInt() ?? 0,
       title: (map['title'] ?? '') as String,
       description: (map['description'] ?? '') as String,
-      pointsReward: (map['points_reward'] as num?)?.toInt() ?? 10,
+      pointsReward: HabitRewards.basePoints,
       streak: (map['streak'] as num?)?.toInt() ?? 0,
       lastCompletedAt: _parseDate(map['last_completed_at']),
     );

@@ -7,6 +7,7 @@ import '../../../core/providers.dart';
 import '../data/habits_api.dart';
 import '../domain/habit.dart';
 import '../domain/habit_calendar.dart';
+import '../domain/habit_rewards.dart';
 import '../domain/habit_validators.dart';
 
 final habitsClockProvider = Provider<DateTime Function()>(
@@ -188,13 +189,16 @@ class HabitsActions {
     int points,
   ) {
     final error =
-        HabitValidators.validateHabit(title: title, points: points) ??
+        HabitValidators.validateHabit(
+          title: title,
+          points: HabitRewards.basePoints,
+        ) ??
         HabitValidators.validateDescription(description);
     if (error != null) throw HabitValidationException(error);
     return {
       'title': title.trim(),
       'description': description.trim(),
-      'points_reward': points,
+      'points_reward': HabitRewards.basePoints,
     };
   }
 }
