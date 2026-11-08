@@ -257,7 +257,6 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen>
                                   .addHabit(
                                     title: template.title,
                                     description: template.description,
-                                    pointsReward: template.pointsReward,
                                   );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(

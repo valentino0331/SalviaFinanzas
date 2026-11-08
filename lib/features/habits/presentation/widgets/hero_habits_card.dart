@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../domain/habit_rewards.dart';
 
 class HeroHabitsCard extends StatelessWidget {
   const HeroHabitsCard({super.key, required this.habitsCount});
@@ -12,11 +13,7 @@ class HeroHabitsCard extends StatelessWidget {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF2E513C),
-            Color(0xFF1B3828),
-            Color(0xFF132A1C),
-          ],
+          colors: [Color(0xFF2E513C), Color(0xFF1B3828), Color(0xFF132A1C)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -45,7 +42,10 @@ class HeroHabitsCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
@@ -72,7 +72,9 @@ class HeroHabitsCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            "Mantener rutinas diarias te otorga bonos especiales de racha y puntos para tu vivero.",
+            '${HabitRewards.basePoints} puntos por cada hábito completado y '
+            '${HabitRewards.streakBonus} extra cada '
+            '${HabitRewards.bonusInterval} días de racha.',
             style: GoogleFonts.outfit(
               fontSize: 12.5,
               color: Colors.white.withValues(alpha: 0.8),

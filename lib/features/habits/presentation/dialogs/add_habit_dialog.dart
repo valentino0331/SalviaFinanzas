@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme.dart';
 import '../../application/habits_providers.dart';
 import '../../domain/habit.dart';
+import '../../domain/habit_rewards.dart';
 import '../../domain/habit_validators.dart';
 
 /// Abre el diálogo para crear un hábito saludable.
@@ -37,7 +38,6 @@ class _AddHabitDialogState extends ConsumerState<AddHabitDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descController;
-  late final TextEditingController _pointsController;
 
   bool _saving = false;
 
@@ -48,17 +48,12 @@ class _AddHabitDialogState extends ConsumerState<AddHabitDialog> {
     _descController = TextEditingController(
       text: widget.habit?.description ?? '',
     );
-    _pointsController = TextEditingController(
-      text: (widget.habit?.pointsReward ?? HabitValidators.defaultPoints)
-          .toString(),
-    );
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descController.dispose();
-    _pointsController.dispose();
     super.dispose();
   }
 
@@ -74,19 +69,13 @@ class _AddHabitDialogState extends ConsumerState<AddHabitDialog> {
       final habit = widget.habit;
       final title = _titleController.text.trim();
       final description = _descController.text.trim();
-      final points = HabitValidators.parsePoints(_pointsController.text);
       if (habit == null) {
-        await actions.addHabit(
-          title: title,
-          description: description,
-          pointsReward: points,
-        );
+        await actions.addHabit(title: title, description: description);
       } else {
         await actions.updateHabit(
           id: habit.id,
           title: title,
           description: description,
-          pointsReward: points,
         );
       }
       await HapticFeedback.lightImpact();
@@ -151,15 +140,14 @@ class _AddHabitDialogState extends ConsumerState<AddHabitDialog> {
                   validator: HabitValidators.validateDescription,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: _pointsController,
-                  enabled: !_saving,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: "Recompensa de Puntos",
+                Text(
+                  '${HabitRewards.basePoints} puntos por completado. '
+                  '+${HabitRewards.streakBonus} extra cada '
+                  '${HabitRewards.bonusInterval} días de racha.',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    color: RusticTheme.lightText,
                   ),
-                  validator: HabitValidators.validatePoints,
                 ),
               ],
             ),

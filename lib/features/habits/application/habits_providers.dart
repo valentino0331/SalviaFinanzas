@@ -158,24 +158,19 @@ class HabitsActions {
 
   Future<void> refresh() => _ref.read(habitsViewProvider.notifier).refresh();
 
-  Future<void> addHabit({
-    required String title,
-    required String description,
-    required int pointsReward,
-  }) {
+  Future<void> addHabit({required String title, required String description}) {
     return _ref
         .read(habitsViewProvider.notifier)
-        .addHabit(_validatedData(title, description, pointsReward));
+        .addHabit(_validatedData(title, description));
   }
 
   Future<void> updateHabit({
     required int id,
     required String title,
     required String description,
-    required int pointsReward,
   }) => _ref
       .read(habitsViewProvider.notifier)
-      .updateHabit(id, _validatedData(title, description, pointsReward));
+      .updateHabit(id, _validatedData(title, description));
 
   Future<void> deleteHabit(int id) =>
       _ref.read(habitsViewProvider.notifier).deleteHabit(id);
@@ -183,17 +178,11 @@ class HabitsActions {
   Future<int> completeHabit(int id) =>
       _ref.read(habitsViewProvider.notifier).completeHabit(id);
 
-  Map<String, dynamic> _validatedData(
-    String title,
-    String description,
-    int points,
-  ) {
-    final error =
-        HabitValidators.validateHabit(
-          title: title,
-          points: HabitRewards.basePoints,
-        ) ??
-        HabitValidators.validateDescription(description);
+  Map<String, dynamic> _validatedData(String title, String description) {
+    final error = HabitValidators.validateHabit(
+      title: title,
+      description: description,
+    );
     if (error != null) throw HabitValidationException(error);
     return {
       'title': title.trim(),
