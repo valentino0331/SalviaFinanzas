@@ -8,6 +8,7 @@ import '../data/habits_api.dart';
 import '../domain/habit.dart';
 import '../domain/habit_calendar.dart';
 import '../domain/habit_rewards.dart';
+import '../domain/habit_template.dart';
 import '../domain/habit_validators.dart';
 
 final habitsClockProvider = Provider<DateTime Function()>(
@@ -170,7 +171,18 @@ class HabitsActions {
     required String description,
   }) => _ref
       .read(habitsViewProvider.notifier)
-      .updateHabit(id, _validatedData(title, description));
+      .updateHabit(id, _validatedData(title, description, excludingId: id));
+
+  Future<void> adoptHabit(HabitTemplate template) {
+    final habits = _ref.read(habitsViewProvider).valueOrNull ?? const <Habit>[];
+    if (habits.any((habit) => habit.templateId == template.id)) {
+      throw HabitValidationException('Ya adoptaste esta recomendación');
+    }
+    return _ref.read(habitsViewProvider.notifier).addHabit({
+      ..._validatedData(template.title, template.description),
+      'template_id': template.id,
+    });
+  }
 
   Future<void> deleteHabit(int id) =>
       _ref.read(habitsViewProvider.notifier).deleteHabit(id);
@@ -178,14 +190,26 @@ class HabitsActions {
   Future<int> completeHabit(int id) =>
       _ref.read(habitsViewProvider.notifier).completeHabit(id);
 
-  Map<String, dynamic> _validatedData(String title, String description) {
+  Map<String, dynamic> _validatedData(
+    String title,
+    String description, {
+    int? excludingId,
+  }) {
     final error = HabitValidators.validateHabit(
       title: title,
       description: description,
     );
     if (error != null) throw HabitValidationException(error);
+    final habits = _ref.read(habitsViewProvider).valueOrNull ?? const <Habit>[];
+    final duplicateError = HabitValidators.validateUniqueTitle(
+      title,
+      habits
+          .where((habit) => habit.id != excludingId)
+          .map((habit) => habit.title),
+    );
+    if (duplicateError != null) throw HabitValidationException(duplicateError);
     return {
-      'title': title.trim(),
+      'title': HabitValidators.cleanTitle(title),
       'description': description.trim(),
       'points_reward': HabitRewards.basePoints,
     };

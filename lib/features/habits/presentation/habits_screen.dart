@@ -6,6 +6,7 @@ import '../../../core/theme.dart';
 import '../../../core/providers.dart';
 import '../application/habits_providers.dart';
 import '../domain/habit_template.dart';
+import '../domain/habit_validators.dart';
 import 'dialogs/add_habit_dialog.dart';
 import 'dialogs/delete_habit_dialog.dart';
 import 'dialogs/habit_completed_dialog.dart';
@@ -114,9 +115,18 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen>
             ),
           ),
           data: (habits) {
-            final activeTitles = habits.map((h) => h.title).toSet();
+            final activeTitles = habits
+                .map((h) => HabitValidators.normalizeTitle(h.title))
+                .toSet();
+            final activeTemplates = habits.map((h) => h.templateId).toSet();
             final pendingRecommendations = habitTemplates
-                .where((t) => !activeTitles.contains(t.title))
+                .where(
+                  (t) =>
+                      !activeTemplates.contains(t.id) &&
+                      !activeTitles.contains(
+                        HabitValidators.normalizeTitle(t.title),
+                      ),
+                )
                 .toList();
 
             return RefreshIndicator(
@@ -249,40 +259,45 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen>
                         final template = pendingRecommendations[index];
                         return RecommendationCard(
                           template: template,
-                          onAdopt: () async {
-                            await HapticFeedback.lightImpact();
-                            try {
-                              await ref
-                                  .read(habitsActionsProvider)
-                                  .addHabit(
-                                    title: template.title,
-                                    description: template.description,
-                                  );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      "¡Hábito \"${template.title}\" adoptado! 🌿",
-                                    ),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      e.toString().replaceAll(
-                                        "Exception: ",
-                                        "",
-                                      ),
-                                    ),
-                                    backgroundColor: const Color(0xFFD94841),
-                                  ),
-                                );
-                              }
-                            }
-                          },
+                          onAdopt: pending.isNotEmpty
+                              ? null
+                              : () async {
+                                  await HapticFeedback.lightImpact();
+                                  try {
+                                    await ref
+                                        .read(habitsActionsProvider)
+                                        .adoptHabit(template);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            "¡Hábito \"${template.title}\" adoptado! 🌿",
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            e.toString().replaceAll(
+                                              "Exception: ",
+                                              "",
+                                            ),
+                                          ),
+                                          backgroundColor: const Color(
+                                            0xFFD94841,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
                         );
                       },
                     ),

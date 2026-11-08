@@ -19,9 +19,22 @@ class HabitValidators {
   static const int maxTitleLength = 40;
   static const int maxDescriptionLength = 80;
 
+  static String cleanTitle(String title) =>
+      title.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+  static String normalizeTitle(String title) => cleanTitle(title).toLowerCase();
+
+  static String? validateUniqueTitle(String title, Iterable<String> titles) {
+    final normalized = normalizeTitle(title);
+    if (titles.any((existing) => normalizeTitle(existing) == normalized)) {
+      return 'Ya tienes un hábito con ese nombre';
+    }
+    return null;
+  }
+
   /// Valida el nombre del hábito. Devuelve null si es válido.
   static String? validateTitle(String? raw) {
-    final text = (raw ?? '').trim();
+    final text = cleanTitle(raw ?? '');
     if (text.isEmpty) return 'Ingresa un nombre para el hábito';
     if (text.length < minTitleLength) {
       return 'Escribe al menos $minTitleLength caracteres';
