@@ -37,6 +37,11 @@ final habitsPendingProvider = StateProvider<Set<int>>((ref) {
   return {};
 });
 
+final habitsRefreshErrorProvider = StateProvider<String?>((ref) {
+  ref.watch(authProvider.select((state) => state.user?['id']));
+  return null;
+});
+
 /// Estado propio de la feature; se descarta al cambiar la cuenta.
 final habitsViewProvider =
     StateNotifierProvider<HabitsController, AsyncValue<List<Habit>>>((ref) {
@@ -56,7 +61,9 @@ class HabitsController extends StateNotifier<AsyncValue<List<Habit>>> {
   Future<void> refresh() async {
     if (_ref.read(habitsPendingProvider).isNotEmpty) return;
     final revision = ++_revision;
-    if (!state.hasValue) state = const AsyncValue.loading();
+    final previous = state.valueOrNull;
+    _ref.read(habitsRefreshErrorProvider.notifier).state = null;
+    if (previous == null) state = const AsyncValue.loading();
     try {
       final habits = await _api.getHabits();
       final points = await _api.getLocalPoints();
@@ -66,7 +73,13 @@ class HabitsController extends StateNotifier<AsyncValue<List<Habit>>> {
       }
     } catch (error, stack) {
       if (mounted && revision == _revision) {
-        state = AsyncValue.error(error, stack);
+        if (previous == null) {
+          state = AsyncValue.error(error, stack);
+        } else {
+          state = AsyncValue.data(previous);
+          _ref.read(habitsRefreshErrorProvider.notifier).state = error
+              .toString();
+        }
       }
     }
   }

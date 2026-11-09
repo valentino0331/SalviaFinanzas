@@ -73,6 +73,7 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen>
   @override
   Widget build(BuildContext context) {
     final habitsState = ref.watch(habitsViewProvider);
+    final refreshError = ref.watch(habitsRefreshErrorProvider);
     final today = ref.watch(habitsTodayProvider);
     final pending = ref.watch(habitsPendingProvider);
     final authState = ref.watch(authProvider);
@@ -142,6 +143,26 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen>
                   // Top Bar
                   HabitsTopBar(initials: initials),
                   const SizedBox(height: 18),
+
+                  if (refreshError != null) ...[
+                    MaterialBanner(
+                      backgroundColor: const Color(0xFFFFF4DE),
+                      leading: const Icon(Icons.sync_problem_outlined),
+                      content: Text(
+                        'No se pudo actualizar. La lista puede estar desactualizada.\n'
+                        '$refreshError',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: pending.isNotEmpty
+                              ? null
+                              : () => ref.read(habitsActionsProvider).refresh(),
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                  ],
 
                   // Hero Card de Hábitos
                   HeroHabitsCard(habitsCount: habits.length),
