@@ -78,6 +78,7 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen>
     final pending = ref.watch(habitsPendingProvider);
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final totalPoints = (user?['points'] as num?)?.toInt() ?? 0;
     final userName = (user?['name'] ?? 'Usuario').toString();
     final initials = userName.isNotEmpty
         ? userName
@@ -116,6 +117,9 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen>
             ),
           ),
           data: (habits) {
+            final completedToday = habits
+                .where((habit) => habit.isCompletedOn(today))
+                .length;
             final activeTitles = habits
                 .map((h) => HabitValidators.normalizeTitle(h.title))
                 .toSet();
@@ -165,7 +169,11 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen>
                   ],
 
                   // Hero Card de Hábitos
-                  HeroHabitsCard(habitsCount: habits.length),
+                  HeroHabitsCard(
+                    habitsCount: habits.length,
+                    totalPoints: totalPoints,
+                    completedToday: completedToday,
+                  ),
                   const SizedBox(height: 24),
 
                   Row(

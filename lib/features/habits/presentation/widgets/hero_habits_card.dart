@@ -3,9 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../domain/habit_rewards.dart';
 
 class HeroHabitsCard extends StatelessWidget {
-  const HeroHabitsCard({super.key, required this.habitsCount});
+  const HeroHabitsCard({
+    super.key,
+    required this.habitsCount,
+    required this.totalPoints,
+    required this.completedToday,
+  });
 
   final int habitsCount;
+  final int totalPoints;
+  final int completedToday;
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +36,10 @@ class HeroHabitsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 12,
+            runSpacing: 8,
             children: [
               Text(
                 "RUTINAS DIARIAS ✨",
@@ -79,6 +88,55 @@ class HeroHabitsCard extends StatelessWidget {
               fontSize: 12.5,
               color: Colors.white.withValues(alpha: 0.8),
               height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              _summaryPill(Icons.stars_outlined, '$totalPoints puntos'),
+              _summaryPill(
+                Icons.task_alt,
+                habitsCount == 0
+                    ? 'Sin hábitos para hoy'
+                    : '$completedToday de $habitsCount completados hoy',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: habitsCount == 0 ? 0 : completedToday / habitsCount,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(6),
+            color: const Color(0xFFC8E6C9),
+            backgroundColor: Colors.white.withValues(alpha: 0.14),
+            semanticsLabel:
+                'Hábitos completados hoy: $completedToday de $habitsCount',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryPill(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Wrap(
+        spacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFFC8E6C9)),
+          Text(
+            text,
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

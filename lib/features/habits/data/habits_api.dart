@@ -301,11 +301,12 @@ class HabitsApi {
       }
     }
     checkSession();
-    user!.addAll({
-      'points': updatedUser['points'],
-      'streak': updatedUser['streak'],
-      _receiptField: updatedUser[_receiptField],
-    });
+    // El perfil inicial de core puede ser Map<String, Object> aunque su
+    // interfaz sea Map<String, dynamic>. addAll comprueba el tipo del mapa
+    // completo; asignar cada valor permite actualizar también ese perfil.
+    user!['points'] = (updatedUser['points'] as num).toInt();
+    user['streak'] = (updatedUser['streak'] as num).toInt();
+    user[_receiptField] = updatedUser[_receiptField] as String;
     try {
       await prefs.remove('${key}_pending_completion');
     } catch (_) {
