@@ -24,12 +24,32 @@ if (process.env.DATABASE_URL) {
   try {
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+      keepAlive: true,
     });
+
+    pool.on('error', (err) => {
+      console.error("⚠️ Error imprevisto en cliente inactivo del pool de Neon:", err.message);
+    });
+
     console.log("🌱 Conexión configurada para Neon PostgreSQL");
-    pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_income DECIMAL(12, 2) DEFAULT 1500.00;')
-      .then(() => console.log("✅ Columna monthly_income verificada/creada en PostgreSQL"))
-      .catch(e => console.error("⚠️ Error agregando columna monthly_income:", e.message));
+    pool.query(`
+      CREATE TABLE IF NOT EXISTS accounts (
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_income DECIMAL(12, 2) DEFAULT 1500.00;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS account_id VARCHAR(255);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'owner';
+      ALTER TABLE savings_missions ADD COLUMN IF NOT EXISTS is_shared BOOLEAN DEFAULT FALSE;
+      ALTER TABLE savings_missions ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'General';
+    `)
+      .then(() => console.log("✅ Tablas y columnas Neon verificadas/migradas"))
+      .catch(e => console.error("⚠️ Error ejecutando migraciones iniciales Neon:", e.message));
   } catch (err) {
     console.error("❌ Error inicializando pool de Postgres:", err.message);
     useMockDb = true;
@@ -661,10 +681,116 @@ app.get('/api/financial-advisor', async (req, res) => {
   });
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', database: useMockDb ? 'mock_in_memory' : 'postgres_neon' });
+// === ENDPOINT: ASESOR FINANCIERO Y MONITOREO CON IA ===
+app.post('/api/ai/savings-advisor', async (req, res) => {
+  try {
+    const { user_id } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
+
+    // Obtener contexto de finanzas del usuario
+    let user = null;
+    let missions = [];
+    let recentExpenses = [];
+
+    if (useMockDb) {
+      user = mockDb.users.find(u => u.id === (user_id || "google_mock_123")) || mockDb.users[0];
+      missions = mockDb.savings_missions.filter(m => m.user_id === user.id);
+      recentExpenses = mockDb.expenses.filter(e => e.user_id === user.id);
+    } else {
+      const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [user_id || 'google_mock_123']);
+      user = userRes.rows[0];
+      const mRes = await pool.query('SELECT * FROM savings_missions WHERE user_id = $1', [user?.id]);
+      missions = mRes.rows;
+      const expRes = await pool.query('SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC LIMIT 20', [user?.id]);
+      recentExpenses = expRes.rows;
+    }
+
+    const totalSpent = recentExpenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+    const activeMissions = missions.filter(m => !m.is_completed);
+
+    if (apiKey) {
+      try {
+        const prompt = `Actúa como Salvia, un asesor financiero amigable y gamificado para jóvenes estudiantes.
+Analiza este perfil:
+- Ingreso mensual: S/ ${user?.monthly_income || 1500}
+- Gastos recientes (últimos 30 días): S/ ${totalSpent}
+- Metas de ahorro activas: ${JSON.stringify(activeMissions.map(m => ({ title: m.title, meta: m.target_amount, actual: m.current_amount, deadline: m.deadline })))}
+
+Entrega un diagnóstico breve con:
+1. Una recomendación de ahorro personalizada para acelerar su meta principal.
+2. Un micropaso diario accionable para recortar gastos hormiga.
+3. Un mensaje motivacional estilo botánico (semilla/florecer).
+Responde en formato JSON plano: { "diagnosis": string, "daily_tip": string, "motivation": string }`;
+
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        if (geminiResponse.ok) {
+          const data = await geminiResponse.json();
+          const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (aiText) {
+            const parsed = JSON.parse(aiText);
+            return res.json({ source: 'gemini_ai', ...parsed });
+          }
+        }
+      } catch (aiErr) {
+        console.warn("⚠️ Fallback por error en llamada Gemini AI:", aiErr.message);
+      }
+    }
+
+    // Fallback algorítmico inteligente (heurística offline / sin API key)
+    const priorityMission = activeMissions[0];
+    const remaining = priorityMission ? (parseFloat(priorityMission.target_amount) - parseFloat(priorityMission.current_amount)) : 0;
+    const suggestedDaily = remaining > 0 ? (remaining / 30).toFixed(2) : "5.00";
+
+    return res.json({
+      source: 'salvia_algorithmic_engine',
+      diagnosis: priorityMission
+        ? `Para tu meta '${priorityMission.title}', si apartas S/ ${suggestedDaily} al día lograrás financiarla en un mes.`
+        : 'Tus finanzas están balanceadas. Te sugerimos crear una nueva meta de ahorro para mantener el hábito.',
+      daily_tip: 'Aplica el reto del redondeo: cada gasto diario redondéalo hacia arriba y transfiere la diferencia a tu bóveda.',
+      motivation: '¡Tu jardín financiero crece con cada sol que decides cuidar! 🌱✨'
+    });
+  } catch (err) {
+    console.error("Error en asesor IA:", err.message);
+    res.status(500).json({ error: 'Error procesando recomendación de IA' });
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`🍁 Servidor rústico de finanzas corriendo en http://localhost:${PORT}`);
+// === ENDPOINTS: CUENTAS COMPARTIDAS / MULTI-USUARIO ===
+app.get('/api/accounts/:id/members', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (useMockDb) {
+      const members = mockDb.users.filter(u => u.account_id === id);
+      return res.json({ account_id: id, members });
+    }
+    const result = await pool.query('SELECT id, email, name, avatar_url, role FROM users WHERE account_id = $1', [id]);
+    res.json({ account_id: id, members: result.rows });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    database: useMockDb ? 'mock_in_memory' : 'postgres_neon',
+    serverless: !!process.env.VERCEL,
+  });
+});
+
+// Si no está corriendo como Serverless Function en Vercel, iniciar servidor HTTP
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🍁 Servidor rústico de finanzas corriendo en http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
