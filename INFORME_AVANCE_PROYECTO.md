@@ -324,27 +324,27 @@ A continuación se presenta la relación cronológica de los commits registrados
 | `52b922e` | Sem 11 | 2026-10-16 17:00 | `docs` | `docs(project): actualizar informe de avance y bitacora de entregables para Semana 11` |
 | `c562c67` | Sem 11 | 2026-10-18 20:47 | `fix` | `fix(core): habilitar fallback autónomo a base de datos offline local ante desconexión o fallo de red` |
 | `e7e6e84` | Sem 11 | 2026-10-20 18:30 | `feat` | `feat(savings): agregacion de boton flotante para creacion rapida de metas de ahorro` |
-| `a12f840` | Sem 12 | 2026-10-22 10:15 | `feat` | `feat(savings): rediseñar modal de aportes con previsualizacion de progreso en tiempo real y chips rapidos` |
-| `b34e191` | Sem 12 | 2026-10-24 16:30 | `fix` | `fix(savings): corregir parseo de montos con coma decimal y ajuste de padding para evitar oclusion por teclado` |
-| `c92d504` | Sem 12 | 2026-10-26 11:20 | `test` | `test(savings): validar formateo de aportes rapidos y tolerancia a separadores decimales` |
-| `d55f712` | Sem 12 | 2026-10-27 18:30 | `merge`| `Merge pull request #10 from valentino0331/feat/ahorros-interacciones-modal` |
-| `e18b429` | Sem 13 | 2026-10-29 14:10 | `feat` | `feat(savings): implementar motor de recomendaciones inteligentes de ahorro y calculo de velocidad de meta` |
-| `f47a630` | Sem 13 | 2026-10-31 09:45 | `fix` | `fix(savings): blindar calculo de porcentaje contra division por cero y acotar dias restantes` |
-| `1b32d84` | Sem 13 | 2026-11-02 16:15 | `feat` | `feat(savings): integrar tarjeta botanica de consejos inteligentes y estados evolutivos de planta` |
-| `2c45e91` | Sem 13 | 2026-11-03 19:15 | `merge`| `Merge pull request #11 from valentino0331/feat/ahorros-recomendaciones-proyeccion` |
-| `3d78f02` | Sem 14 | 2026-11-04 11:30 | `feat` | `feat(savings): incorporar soporte para metas compartidas y multi-usuario en modelo de dominio` |
-| `4e89a13` | Sem 14 | 2026-11-06 15:20 | `fix` | `fix(core): forzar invalidacion y recarga reactiva de savingsProvider al detectar cambio de usuario o cuenta compartida` |
-| `5f90b24` | Sem 14 | 2026-11-07 17:00 | `feat` | `feat(savings): agregar selector de colaboradores y switch de meta compartida en dialogo de creacion` |
-| `6a01c35` | Sem 14 | 2026-11-08 20:30 | `merge`| `Merge pull request #12 from valentino0331/feat/ahorros-multi-usuario-compartido` |
-| `7b12d46` | Sem 15 | 2026-11-09 10:45 | `feat` | `feat(backend): adaptar arquitectura para despliegue serverless en Vercel con vercel.json y soporte Neon PostgreSQL` |
-| `8c23e57` | Sem 15 | 2026-11-10 14:20 | `feat` | `feat(backend): extender esquema db.sql con tablas de cuentas familiares, roles y colaboradores de metas` |
-| `9d34f68` | Sem 15 | 2026-11-11 16:40 | `fix` | `fix(backend): mitigar fallos de desconexion ECONNRESET en conexiones inactivas a Neon mediante pool keepAlive y reconexion` |
-| `0e45a79` | Sem 15 | 2026-11-12 19:00 | `merge`| `Merge pull request #13 from valentino0331/feat/backend-vercel-neon-db` |
-| `1f56b80` | Sem 16 | 2026-11-13 11:30 | `feat` | `feat(backend): agregar endpoint de monitoreo financiero con IA y analisis predictivo de metas de ahorro` |
-| `2a67c91` | Sem 16 | 2026-11-14 16:00 | `feat` | `feat(savings): integrar modal de asesor IA y proyecciones personalizadas en pantalla de ahorros` |
-| `3b78d02` | Sem 16 | 2026-11-15 11:30 | `docs` | `docs(project): actualizar informe de avance con bitacora de Semanas 12 a 16, arquitectura Vercel/Neon y trazabilidad Git` |
-| `4c89e13` | Sem 16 | 2026-11-15 13:15 | `test` | `test(savings): suite integral de pruebas unitarias y de widgets con cobertura del 100% para nuevas funcionalidades` |
-| `5d90f24` | Sem 16 | 2026-11-15 14:00 | `merge`| `Merge pull request #14 from valentino0331/feat/ahorros-ai-advisor-gemini` |
+| `b76a21e` | Sem 12 | 2026-10-22 10:15 | `feat` | `feat(savings): rediseñar modal de aportes con previsualizacion de progreso en tiempo real y chips rapidos` |
+| `f90e752` | Sem 12 | 2026-10-24 16:30 | `fix` | `fix(savings): corregir parseo de montos con coma decimal y ajuste de padding para evitar oclusion por teclado` |
+| `08464bd` | Sem 12 | 2026-10-26 11:20 | `test` | `test(savings): validar formateo de aportes rapidos y tolerancia a separadores decimales` |
+| `46838c3` | Sem 12 | 2026-10-27 18:30 | `merge`| `Merge pull request #10 from valentino0331/feat/ahorros-interacciones-modal` |
+| `c4ff592` | Sem 13 | 2026-10-29 14:10 | `feat` | `feat(savings): implementar motor de recomendaciones inteligentes de ahorro y calculo de velocidad de meta` |
+| `bd509c5` | Sem 13 | 2026-10-31 09:45 | `fix` | `fix(savings): blindar calculo de porcentaje contra division por cero y acotar dias restantes` |
+| `fd89ea0` | Sem 13 | 2026-11-02 16:15 | `feat` | `feat(savings): integrar tarjeta botanica de consejos inteligentes y estados evolutivos de planta` |
+| `debbe08` | Sem 13 | 2026-11-03 19:15 | `merge`| `Merge pull request #11 from valentino0331/feat/ahorros-recomendaciones-proyeccion` |
+| `9e30a46` | Sem 14 | 2026-11-04 11:30 | `feat` | `feat(savings): incorporar soporte para metas compartidas y multi-usuario en modelo de dominio` |
+| `1a7d548` | Sem 14 | 2026-11-06 15:20 | `fix` | `fix(core): forzar invalidacion y recarga reactiva de savingsProvider al detectar cambio de usuario o cuenta compartida` |
+| `c6dea17` | Sem 14 | 2026-11-07 17:00 | `feat` | `feat(savings): agregar selector de colaboradores y switch de meta compartida en dialogo de creacion` |
+| `a99950c` | Sem 14 | 2026-11-08 20:30 | `merge`| `Merge pull request #12 from valentino0331/feat/ahorros-multi-usuario-compartido` |
+| `c24f7a9` | Sem 15 | 2026-11-09 10:45 | `feat` | `feat(backend): adaptar arquitectura para despliegue serverless en Vercel con vercel.json y soporte Neon PostgreSQL` |
+| `4174bbb` | Sem 15 | 2026-11-10 14:20 | `feat` | `feat(backend): extender esquema db.sql con tablas de cuentas familiares, roles y colaboradores de metas` |
+| `48d7c2e` | Sem 15 | 2026-11-11 16:40 | `fix` | `fix(backend): mitigar fallos de desconexion ECONNRESET en conexiones inactivas a Neon mediante pool keepAlive y reconexion` |
+| `6c8879c` | Sem 15 | 2026-11-12 19:00 | `merge`| `Merge pull request #13 from valentino0331/feat/backend-vercel-neon-db` |
+| `027d063` | Sem 16 | 2026-11-13 11:30 | `feat` | `feat(backend): agregar endpoint de monitoreo financiero con IA y analisis predictivo de metas de ahorro` |
+| `2b7f940` | Sem 16 | 2026-11-14 16:00 | `feat` | `feat(savings): integrar modal de asesor IA y proyecciones personalizadas en pantalla de ahorros` |
+| `c39615d` | Sem 16 | 2026-11-15 11:30 | `docs` | `docs(project): actualizar informe de avance con bitacora de Semanas 12 a 16, arquitectura Vercel/Neon y trazabilidad Git` |
+| `a061837` | Sem 16 | 2026-11-15 13:15 | `test` | `test(savings): suite integral de pruebas unitarias y de widgets con cobertura del 100% para nuevas funcionalidades` |
+| `09118ef` | Sem 16 | 2026-11-15 14:00 | `merge`| `Merge pull request #14 from valentino0331/feat/ahorros-ai-advisor-gemini` |
 
 ---
 
@@ -365,23 +365,23 @@ El proceso de construcción del software experimentó desafíos técnicos y bugs
 
 4. **Fallo de Parseo Monetario y Oclusión por Teclado Virtual (Semana 12):**
    - *Causa:* Al ingresar aportes rápidos o personalizados usando teclado con coma decimal (común en configuraciones regionales hispanohablantes como `15,50`), `double.tryParse` retornaba `null` produciendo aportes de 0.0 o bloqueando la transacción. Además, en dispositivos compactos el teclado tapaba el botón de acción principal.
-   - *Solución:* En el commit `b34e191`, se implementó normalización automática `text.replaceAll(',', '.')` en `SavingsDialogHelper.textField` y se envolvió el modal en `SingleChildScrollView` con ajuste dinámico de padding inferior mediante `MediaQuery.of(ctx).viewInsets.bottom`.
+   - *Solución:* En el commit `f90e752`, se implementó normalización automática `text.replaceAll(',', '.')` en `SavingsDialogHelper.textField` y se envolvió el modal en `SingleChildScrollView` con ajuste dinámico de padding inferior mediante `MediaQuery.of(ctx).viewInsets.bottom`.
 
 5. **Excepción Matemática de División entre Cero (`NaN` / `Infinity` en Semana 13):**
    - *Causa:* Cuando un usuario creaba una meta con monto objetivo 0 o con fecha límite igual a la fecha del sistema (`daysRemaining == 0`), el cálculo de `monthlySavingRequired` y `dailySavingSuggested` arrojaba valores indefinidos, desbordando el `LinearProgressIndicator` con error fatal en runtime.
-   - *Solución:* En el commit `f47a630`, se blindó el cálculo asegurando que si `daysRemaining <= 0` o `monthsRemaining <= 0`, la función retorne de forma segura el remanente total acotado (`clamp(0.0, double.infinity)`) o `null`.
+   - *Solución:* En el commit `bd509c5`, se blindó el cálculo asegurando que si `daysRemaining <= 0` o `monthsRemaining <= 0`, la función retorne de forma segura el remanente total acotado (`clamp(0.0, double.infinity)`) o `null`.
 
 6. **Desincronización de Estado en Cuentas Compartidas Multi-Usuario (Semana 14):**
    - *Causa:* Al admitir múltiples perfiles/usuarios bajo una misma cuenta compartida, el estado de `savingsProvider` en Riverpod mantenía en memoria caché las metas del usuario anterior al conmutar de perfil, requiriendo un reinicio forzado de la app.
-   - *Solución:* En el commit `4e89a13`, se conectó `savingsProvider` con una señal de invalidación en `AuthNotifier`, disparando automáticamente `ref.invalidate(savingsProvider)` ante cualquier mutación de credenciales o perfil activo.
+   - *Solución:* En el commit `1a7d548`, se conectó `savingsProvider` con una señal de invalidación en `AuthNotifier`, disparando automáticamente `ref.invalidate(savingsProvider)` ante cualquier mutación de credenciales o perfil activo.
 
 7. **Terminación Inesperada de Conexiones Serverless en Neon Cloud (`ECONNRESET` en Semana 15):**
    - *Causa:* Durante el despliegue serverless en Vercel, los contenedores efímeros se suspenden entre peticiones, provocando que las conexiones persistentes al pool de PostgreSQL en Neon queden en estado zombi y disparen errores no controlados.
-   - *Solución:* En el commit `9d34f68`, se configuró el pool con `keepAlive: true`, `max: 10`, `connectionTimeoutMillis: 5000` y un listener global `pool.on('error', ...)` que intercepta desconexiones e inicializa clientes limpios bajo demanda.
+   - *Solución:* En el commit `48d7c2e`, se configuró el pool con `keepAlive: true`, `max: 10`, `connectionTimeoutMillis: 5000` y un listener global `pool.on('error', ...)` que intercepta desconexiones e inicializa clientes limpios bajo demanda.
 
 8. **Desbordamiento Visual en Modal de Asesor Financiero IA (`RenderFlex overflow by 117 px` en Semana 16):**
    - *Causa:* Al desplegar el `ModalBottomSheet` con el diagnóstico completo generado por el modelo de IA en pantallas pequeñas, la altura estática del modal excedía el alto de la ventana visible.
-   - *Solución:* Se habilitó la propiedad `isScrollControlled: true` en `showModalBottomSheet` envolviendo el contenido en `SingleChildScrollView`, garantizando adaptabilidad completa en cualquier resolución de pantalla.
+   - *Solución:* En el commit `2b7f940`, se habilitó la propiedad `isScrollControlled: true` en `showModalBottomSheet` envolviendo el contenido en `SingleChildScrollView`, garantizando adaptabilidad completa en cualquier resolución de pantalla.
 
 ---
 
