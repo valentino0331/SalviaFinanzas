@@ -422,7 +422,7 @@ app.post('/api/habits', async (req, res) => {
   };
 
   if (useMockDb) {
-    newHabit.id = mockDb.habits.length + 1;
+    newHabit.id = mockDb.habits.reduce((maxId, habit) => Math.max(maxId, habit.id), 0) + 1;
     newHabit.user_id = userId;
     mockDb.habits.push(newHabit);
     return res.status(201).json(newHabit);
@@ -760,6 +760,74 @@ Responde en formato JSON plano: { "diagnosis": string, "daily_tip": string, "mot
   } catch (err) {
     console.error("Error en asesor IA:", err.message);
     res.status(500).json({ error: 'Error procesando recomendación de IA' });
+  }
+});
+
+// Editar únicamente los datos configurables; no reinicia rachas ni premios.
+app.put('/api/habits/:id', async (req, res) => {
+  const habitId = Number(req.params.id);
+  const { title, description = '', points_reward } = req.body || {};
+
+  if (!Number.isSafeInteger(habitId) || habitId <= 0) {
+    return res.status(400).json({ error: "ID de hábito inválido" });
+  }
+  if (typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 40) {
+    return res.status(400).json({ error: "El título debe tener entre 3 y 40 caracteres" });
+  }
+  if (typeof description !== 'string' || description.trim().length > 80) {
+    return res.status(400).json({ error: "La descripción debe tener como máximo 80 caracteres" });
+  }
+  if (!Number.isInteger(points_reward) || points_reward < 1 || points_reward > 999) {
+    return res.status(400).json({ error: "Los puntos deben ser un entero entre 1 y 999" });
+  }
+
+  try {
+    const userId = await getUserId(req);
+    const changes = { title: title.trim(), description: description.trim(), points_reward };
+    if (useMockDb) {
+      const habit = mockDb.habits.find(h => h.id === habitId && h.user_id === userId);
+      if (!habit) return res.status(404).json({ error: "Hábito no encontrado" });
+      Object.assign(habit, changes);
+      return res.json(habit);
+    }
+
+    const result = await pool.query(
+      'UPDATE habits SET title = $1, description = $2, points_reward = $3 WHERE id = $4 AND user_id = $5 RETURNING *',
+      [changes.title, changes.description, changes.points_reward, habitId, userId]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: "Hábito no encontrado" });
+    return res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error al editar hábito:", err.message);
+    return res.status(500).json({ error: "No se pudo editar el hábito" });
+  }
+});
+
+// Los puntos y su historial se conservan aunque el hábito se elimine.
+app.delete('/api/habits/:id', async (req, res) => {
+  const habitId = Number(req.params.id);
+  if (!Number.isSafeInteger(habitId) || habitId <= 0) {
+    return res.status(400).json({ error: "ID de hábito inválido" });
+  }
+
+  try {
+    const userId = await getUserId(req);
+    if (useMockDb) {
+      const index = mockDb.habits.findIndex(h => h.id === habitId && h.user_id === userId);
+      if (index === -1) return res.status(404).json({ error: "Hábito no encontrado" });
+      mockDb.habits.splice(index, 1);
+      return res.json({ success: true });
+    }
+
+    const result = await pool.query(
+      'DELETE FROM habits WHERE id = $1 AND user_id = $2',
+      [habitId, userId]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: "Hábito no encontrado" });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Error al eliminar hábito:", err.message);
+    return res.status(500).json({ error: "No se pudo eliminar el hábito" });
   }
 });
 
