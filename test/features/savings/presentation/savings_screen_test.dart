@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:appdegastos/features/savings/presentation/savings_screen.dart';
 import 'package:appdegastos/core/providers.dart';
+import 'package:appdegastos/features/savings/presentation/savings_screen.dart';
 
 class MockSavingsNotifier extends StateNotifier<AsyncValue<List<dynamic>>> implements SavingsNotifier {
   MockSavingsNotifier(List<dynamic> initialData) : super(AsyncValue.data(initialData));
@@ -24,33 +24,52 @@ class MockSavingsNotifier extends StateNotifier<AsyncValue<List<dynamic>>> imple
 }
 
 void main() {
+  final sampleMissions = [
+    {
+      'id': 1,
+      'title': 'Fondo de Emergencia Activo',
+      'target_amount': 1000.0,
+      'current_amount': 300.0,
+      'icon_name': 'savings',
+      'deadline': '2026-12-31',
+      'is_completed': false,
+      'is_shared': false,
+    },
+    {
+      'id': 2,
+      'title': 'Laptop Completada',
+      'target_amount': 2500.0,
+      'current_amount': 2500.0,
+      'icon_name': 'laptop',
+      'deadline': '2026-10-01',
+      'is_completed': true,
+      'is_shared': false,
+    },
+    {
+      'id': 3,
+      'title': 'Viaje Familiar Grupal',
+      'target_amount': 4000.0,
+      'current_amount': 1200.0,
+      'icon_name': 'flight',
+      'deadline': '2027-02-15',
+      'is_completed': false,
+      'is_shared': true,
+      'collaborators': ['Valentino', 'Eduardo'],
+    },
+  ];
+
   group('SavingsScreen Presentation Tests', () {
-    testWidgets('filters missions between Todas, Activas and Completadas', (WidgetTester tester) async {
+    setUp(() {
+      // Configuración de viewport amplio para pruebas de integración de widgets
+    });
+
+    testWidgets('filters missions between Todas, Activas, Hechas and Compartidas', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
       });
-
-      final sampleMissions = [
-        {
-          'id': 1,
-          'title': 'Fondo de Emergencia Activo',
-          'target_amount': 1000.0,
-          'current_amount': 400.0,
-          'is_completed': false,
-          'icon_name': 'savings',
-        },
-        {
-          'id': 2,
-          'title': 'Laptop Completada',
-          'target_amount': 3000.0,
-          'current_amount': 3000.0,
-          'is_completed': true,
-          'icon_name': 'laptop',
-        },
-      ];
 
       await tester.pumpWidget(
         ProviderScope(
@@ -63,25 +82,36 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Initially on 'Todas': both should be visible
+      expect(find.text('BÓVEDA DE AHORROS'), findsOneWidget);
       expect(find.text('Fondo de Emergencia Activo'), findsOneWidget);
       expect(find.text('Laptop Completada'), findsOneWidget);
+      expect(find.text('Viaje Familiar Grupal'), findsOneWidget);
 
-      // Tap on 'Activas' filter chip
+      // Filtro: Activas
       await tester.tap(find.text('Activas'));
       await tester.pumpAndSettle();
 
       expect(find.text('Fondo de Emergencia Activo'), findsOneWidget);
+      expect(find.text('Viaje Familiar Grupal'), findsOneWidget);
       expect(find.text('Laptop Completada'), findsNothing);
 
-      // Tap on 'Hechas' filter chip
+      // Filtro: Hechas
       await tester.tap(find.text('Hechas'));
       await tester.pumpAndSettle();
 
       expect(find.text('Fondo de Emergencia Activo'), findsNothing);
+      expect(find.text('Viaje Familiar Grupal'), findsNothing);
       expect(find.text('Laptop Completada'), findsOneWidget);
+
+      // Filtro: Compartidas
+      await tester.tap(find.text('Compartidas'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Viaje Familiar Grupal'), findsOneWidget);
+      expect(find.text('Fondo de Emergencia Activo'), findsNothing);
+      expect(find.text('Laptop Completada'), findsNothing);
     });
 
     testWidgets('renders empty state card when there are no savings missions', (WidgetTester tester) async {
@@ -124,6 +154,30 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Nueva Meta de Ahorro'), findsOneWidget);
+    });
+
+    testWidgets('opens AI Advisor dialog on tapping IA Asesor pill', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            savingsProvider.overrideWith((ref) => MockSavingsNotifier(sampleMissions)),
+          ],
+          child: const MaterialApp(
+            home: SavingsScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final aiButton = find.text('IA Asesor');
+      expect(aiButton, findsOneWidget);
+
+      await tester.tap(aiButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Asesor Financiero IA'), findsOneWidget);
+      expect(find.text('Diagnóstico de metas y optimización de ahorro'), findsOneWidget);
     });
   });
 }

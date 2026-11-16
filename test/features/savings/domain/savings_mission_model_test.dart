@@ -12,6 +12,8 @@ void main() {
         'icon_name': 'flight',
         'deadline': '2026-12-31',
         'is_completed': false,
+        'is_shared': true,
+        'collaborators': ['Valentino', 'Eduardo'],
       };
 
       final mission = SavingsMission.fromMap(map);
@@ -23,6 +25,8 @@ void main() {
       expect(mission.iconName, 'flight');
       expect(mission.deadline, '2026-12-31');
       expect(mission.isCompleted, false);
+      expect(mission.isShared, true);
+      expect(mission.collaborators, ['Valentino', 'Eduardo']);
     });
 
     test('progressFraction calculates ratio and clamps between 0.0 and 1.0', () {
@@ -76,6 +80,30 @@ void main() {
       expect(mission.monthlySavingRequired! > 0, true);
     });
 
+    test('dailySavingSuggested calculates daily target and handles edge cases', () {
+      final futureDate = DateTime.now().add(const Duration(days: 30));
+      final futureStr = '${futureDate.year}-${futureDate.month.toString().padLeft(2, '0')}-${futureDate.day.toString().padLeft(2, '0')}';
+
+      final mission = SavingsMission(
+        id: 1, title: 'Pensión Universidad', targetAmount: 600.0, currentAmount: 0.0,
+        deadline: futureStr, isCompleted: false);
+
+      expect(mission.dailySavingSuggested, isNotNull);
+      expect(mission.dailySavingSuggested! >= 18.0, true);
+
+      final completed = mission.copyWith(isCompleted: true);
+      expect(completed.dailySavingSuggested, isNull);
+    });
+
+    test('smartAdvice provides contextual recommendations across stages', () {
+      final almostDone = SavingsMission(
+        id: 1, title: 'Curso de Flutter', targetAmount: 100.0, currentAmount: 90.0, isCompleted: false);
+      expect(almostDone.smartAdvice.contains('recta final'), true);
+
+      final completed = almostDone.copyWith(isCompleted: true);
+      expect(completed.smartAdvice.contains('florecida'), true);
+    });
+
     test('plantState reflects gamification stages accurately', () {
       final seed = SavingsMission(
         id: 1, title: 'Semilla', targetAmount: 100.0, currentAmount: 20.0, isCompleted: false);
@@ -94,7 +122,7 @@ void main() {
       expect(bloomed.plantState, PlantState.bloomed);
     });
 
-    test('toMap serializes properly for API persistence', () {
+    test('toMap serializes properly for API persistence including shared fields', () {
       final mission = SavingsMission(
         id: 99,
         title: 'Bicicleta',
@@ -103,6 +131,8 @@ void main() {
         iconName: 'sports_car',
         deadline: '2026-11-30',
         isCompleted: false,
+        isShared: true,
+        collaborators: ['Valentino', 'Astrid'],
       );
 
       final map = mission.toMap();
@@ -113,6 +143,8 @@ void main() {
       expect(map['icon_name'], 'sports_car');
       expect(map['deadline'], '2026-11-30');
       expect(map['is_completed'], false);
+      expect(map['is_shared'], true);
+      expect(map['collaborators'], ['Valentino', 'Astrid']);
     });
   });
 }
