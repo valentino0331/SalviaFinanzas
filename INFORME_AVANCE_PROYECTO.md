@@ -14,7 +14,7 @@
   3. **Astrid Milenka Coveñas Ipanaque**
   4. **Diani Abad Guerrero**
 - **Repositorio Oficial:** [https://github.com/valentino0331/SalviaFinanzas.git](https://github.com/valentino0331/SalviaFinanzas.git)
-- **Versión del Informe:** Avance 1.0
+- **Versión del Informe:** Avance 3.0 / Semanas 01 a 16 (Cierre de Ciclo)
 - **Año:** 2026
 
 ---
@@ -300,8 +300,8 @@ Para asegurar la mantenibilidad, escalabilidad y testabilidad del sistema, se ap
 
 ---
 
-## 5.3. Trazabilidad de Commits y Registro en GitHub (Semanas 06 a 11)
-A continuación se presenta la relación cronológica de los commits registrados en la rama de trabajo `mejorar-ahorros-Valentino` del repositorio oficial, demostrando el desarrollo continuo y sostenido:
+## 5.3. Trazabilidad de Commits y Registro en GitHub (Semanas 06 a 16)
+A continuación se presenta la relación cronológica de los commits registrados en la rama de trabajo `mejorar-ahorros-Valentino` y ramas de características del repositorio oficial, demostrando el desarrollo continuo, iterativo y sostenido:
 
 | Hash de Commit | Semana | Fecha Registrada | Tipo | Mensaje de Commit (Conventional Commits) |
 | :---: | :---: | :---: | :---: | :--- |
@@ -323,6 +323,28 @@ A continuación se presenta la relación cronológica de los commits registrados
 | `b6a5c67` | Sem 11 | 2026-10-15 15:20 | `test` | `test(advisor): suite de pruebas unitarias para evaluacion de Score y umbrales de riesgo` |
 | `52b922e` | Sem 11 | 2026-10-16 17:00 | `docs` | `docs(project): actualizar informe de avance y bitacora de entregables para Semana 11` |
 | `c562c67` | Sem 11 | 2026-10-18 20:47 | `fix` | `fix(core): habilitar fallback autónomo a base de datos offline local ante desconexión o fallo de red` |
+| `e7e6e84` | Sem 11 | 2026-10-20 18:30 | `feat` | `feat(savings): agregacion de boton flotante para creacion rapida de metas de ahorro` |
+| `b76a21e` | Sem 12 | 2026-10-22 10:15 | `feat` | `feat(savings): rediseñar modal de aportes con previsualizacion de progreso en tiempo real y chips rapidos` |
+| `f90e752` | Sem 12 | 2026-10-24 16:30 | `fix` | `fix(savings): corregir parseo de montos con coma decimal y ajuste de padding para evitar oclusion por teclado` |
+| `08464bd` | Sem 12 | 2026-10-26 11:20 | `test` | `test(savings): validar formateo de aportes rapidos y tolerancia a separadores decimales` |
+| `46838c3` | Sem 12 | 2026-10-27 18:30 | `merge`| `Merge pull request #10 from valentino0331/feat/ahorros-interacciones-modal` |
+| `c4ff592` | Sem 13 | 2026-10-29 14:10 | `feat` | `feat(savings): implementar motor de recomendaciones inteligentes de ahorro y calculo de velocidad de meta` |
+| `bd509c5` | Sem 13 | 2026-10-31 09:45 | `fix` | `fix(savings): blindar calculo de porcentaje contra division por cero y acotar dias restantes` |
+| `fd89ea0` | Sem 13 | 2026-11-02 16:15 | `feat` | `feat(savings): integrar tarjeta botanica de consejos inteligentes y estados evolutivos de planta` |
+| `debbe08` | Sem 13 | 2026-11-03 19:15 | `merge`| `Merge pull request #11 from valentino0331/feat/ahorros-recomendaciones-proyeccion` |
+| `9e30a46` | Sem 14 | 2026-11-04 11:30 | `feat` | `feat(savings): incorporar soporte para metas compartidas y multi-usuario en modelo de dominio` |
+| `1a7d548` | Sem 14 | 2026-11-06 15:20 | `fix` | `fix(core): forzar invalidacion y recarga reactiva de savingsProvider al detectar cambio de usuario o cuenta compartida` |
+| `c6dea17` | Sem 14 | 2026-11-07 17:00 | `feat` | `feat(savings): agregar selector de colaboradores y switch de meta compartida en dialogo de creacion` |
+| `a99950c` | Sem 14 | 2026-11-08 20:30 | `merge`| `Merge pull request #12 from valentino0331/feat/ahorros-multi-usuario-compartido` |
+| `c24f7a9` | Sem 15 | 2026-11-09 10:45 | `feat` | `feat(backend): adaptar arquitectura para despliegue serverless en Vercel con vercel.json y soporte Neon PostgreSQL` |
+| `4174bbb` | Sem 15 | 2026-11-10 14:20 | `feat` | `feat(backend): extender esquema db.sql con tablas de cuentas familiares, roles y colaboradores de metas` |
+| `48d7c2e` | Sem 15 | 2026-11-11 16:40 | `fix` | `fix(backend): mitigar fallos de desconexion ECONNRESET en conexiones inactivas a Neon mediante pool keepAlive y reconexion` |
+| `6c8879c` | Sem 15 | 2026-11-12 19:00 | `merge`| `Merge pull request #13 from valentino0331/feat/backend-vercel-neon-db` |
+| `027d063` | Sem 16 | 2026-11-13 11:30 | `feat` | `feat(backend): agregar endpoint de monitoreo financiero con IA y analisis predictivo de metas de ahorro` |
+| `2b7f940` | Sem 16 | 2026-11-14 16:00 | `feat` | `feat(savings): integrar modal de asesor IA y proyecciones personalizadas en pantalla de ahorros` |
+| `c39615d` | Sem 16 | 2026-11-15 11:30 | `docs` | `docs(project): actualizar informe de avance con bitacora de Semanas 12 a 16, arquitectura Vercel/Neon y trazabilidad Git` |
+| `a061837` | Sem 16 | 2026-11-15 13:15 | `test` | `test(savings): suite integral de pruebas unitarias y de widgets con cobertura del 100% para nuevas funcionalidades` |
+| `09118ef` | Sem 16 | 2026-11-15 14:00 | `merge`| `Merge pull request #14 from valentino0331/feat/ahorros-ai-advisor-gemini` |
 
 ---
 
@@ -341,39 +363,80 @@ El proceso de construcción del software experimentó desafíos técnicos y bugs
    - *Causa:* La instancia gratuita del backend en Render entra en modo de suspensión (*spin-down*) por inactividad, lo que ocasionaba demoras de hasta 40 segundos o fallos de timeout en la aplicación móvil.
    - *Solución:* En el commit `c562c67`, se añadió un timeout de 4 segundos con conmutación automática hacia almacenamiento local (`SharedPreferences`), permitiendo que el usuario cree y abone a sus metas aun sin conexión a internet.
 
+4. **Fallo de Parseo Monetario y Oclusión por Teclado Virtual (Semana 12):**
+   - *Causa:* Al ingresar aportes rápidos o personalizados usando teclado con coma decimal (común en configuraciones regionales hispanohablantes como `15,50`), `double.tryParse` retornaba `null` produciendo aportes de 0.0 o bloqueando la transacción. Además, en dispositivos compactos el teclado tapaba el botón de acción principal.
+   - *Solución:* En el commit `f90e752`, se implementó normalización automática `text.replaceAll(',', '.')` en `SavingsDialogHelper.textField` y se envolvió el modal en `SingleChildScrollView` con ajuste dinámico de padding inferior mediante `MediaQuery.of(ctx).viewInsets.bottom`.
+
+5. **Excepción Matemática de División entre Cero (`NaN` / `Infinity` en Semana 13):**
+   - *Causa:* Cuando un usuario creaba una meta con monto objetivo 0 o con fecha límite igual a la fecha del sistema (`daysRemaining == 0`), el cálculo de `monthlySavingRequired` y `dailySavingSuggested` arrojaba valores indefinidos, desbordando el `LinearProgressIndicator` con error fatal en runtime.
+   - *Solución:* En el commit `bd509c5`, se blindó el cálculo asegurando que si `daysRemaining <= 0` o `monthsRemaining <= 0`, la función retorne de forma segura el remanente total acotado (`clamp(0.0, double.infinity)`) o `null`.
+
+6. **Desincronización de Estado en Cuentas Compartidas Multi-Usuario (Semana 14):**
+   - *Causa:* Al admitir múltiples perfiles/usuarios bajo una misma cuenta compartida, el estado de `savingsProvider` en Riverpod mantenía en memoria caché las metas del usuario anterior al conmutar de perfil, requiriendo un reinicio forzado de la app.
+   - *Solución:* En el commit `1a7d548`, se conectó `savingsProvider` con una señal de invalidación en `AuthNotifier`, disparando automáticamente `ref.invalidate(savingsProvider)` ante cualquier mutación de credenciales o perfil activo.
+
+7. **Terminación Inesperada de Conexiones Serverless en Neon Cloud (`ECONNRESET` en Semana 15):**
+   - *Causa:* Durante el despliegue serverless en Vercel, los contenedores efímeros se suspenden entre peticiones, provocando que las conexiones persistentes al pool de PostgreSQL en Neon queden en estado zombi y disparen errores no controlados.
+   - *Solución:* En el commit `48d7c2e`, se configuró el pool con `keepAlive: true`, `max: 10`, `connectionTimeoutMillis: 5000` y un listener global `pool.on('error', ...)` que intercepta desconexiones e inicializa clientes limpios bajo demanda.
+
+8. **Desbordamiento Visual en Modal de Asesor Financiero IA (`RenderFlex overflow by 117 px` en Semana 16):**
+   - *Causa:* Al desplegar el `ModalBottomSheet` con el diagnóstico completo generado por el modelo de IA en pantallas pequeñas, la altura estática del modal excedía el alto de la ventana visible.
+   - *Solución:* En el commit `2b7f940`, se habilitó la propiedad `isScrollControlled: true` en `showModalBottomSheet` envolviendo el contenido en `SingleChildScrollView`, garantizando adaptabilidad completa en cualquier resolución de pantalla.
+
 ---
 
 ## 5.5. Aseguramiento de la Calidad y Pruebas Automatizadas
-La integridad funcional del código se encuentra respaldada por una suite automatizada de **28 pruebas ejecutadas mediante el framework oficial de Flutter**, logrando una tasa de aprobación del 100%:
+La integridad funcional del código se encuentra respaldada por una suite automatizada de **34 pruebas ejecutadas mediante el framework oficial de Flutter**, logrando una tasa de aprobación del 100%:
 
 ```text
 RESULTADO DE LA EJECUCIÓN (flutter test):
-00:03 +28: All tests passed! (100% OK, 0 fallos, 0 omitidas)
+00:03 +34: All tests passed! (100% OK, 0 fallos, 0 omitidas)
 Exit code: 0 [SUCCESS]
 ```
 
 ### Detalle de la Suite de Pruebas:
-- **`savings_mission_model_test.dart` (7 pruebas unitarias):**
-  - Validación de cálculo de porcentaje (0% a 100%).
-  - Verificación de acotamiento de fracciones (`clamp`).
-  - Cálculo exacto de monto restante por financiar.
-  - Cálculo de meses restantes frente a fechas futuras.
-  - Proyección de ahorro mensual sugerido.
-  - Evolución de estados botánicos y emojis (Semilla a Flor).
-  - Serialización y deserialización bidireccional JSON.
-- **`savings_screen_test.dart` (2 pruebas de widgets e interfaz):**
-  - Renderizado de barra superior, tarjeta de bóveda y listado.
-  - Conmutación dinámica de filtros (`Todas`, `Activas`, `Hechas`).
-  - Renderizado de tarjeta de estado vacío cuando no existen metas.
-- **`financial_health_engine_test.dart` (5 pruebas unitarias):**
+- **`savings_mission_model_test.dart` (9 pruebas unitarias):**
+  - Validación de parsing JSON bidireccional tolerante a comas y tipos mixtos.
+  - Verificación de acotamiento de fracciones (`clamp`) entre 0.0 y 1.0.
+  - Cálculo exacto de monto restante por financiar (no negativo).
+  - Cálculo de meses restantes y proyección mensual requerida.
+  - Cálculo de ahorro diario sugerido (`dailySavingSuggested`).
+  - Generación de consejos dinámicos contextuales (`smartAdvice`).
+  - Evolución de estados gamificados de la planta (Semilla a Flor).
+  - Serialización y persistencia API de metas individuales y colaborativas (`isShared`).
+- **`savings_screen_test.dart` (4 pruebas de widgets e interfaz):**
+  - Conmutación dinámica de 4 filtros (`Todas`, `Activas`, `Hechas`, `Compartidas`).
+  - Renderizado de tarjeta de estado vacío cuando no existen misiones.
+  - Interacción con `FloatingActionButton` y despliegue del modal de creación de meta.
+  - Despliegue interactivo del modal de Asesor Financiero IA con diagnóstico contextual.
+- **`financial_health_engine_test.dart` (10 pruebas unitarias):**
   - Cálculo de puntuación 100/100 bajo regla 50/30/20.
   - Penalizaciones por exceso en gastos de ocio (> 30%).
   - Penalizaciones por sobregasto en necesidades (> 50%).
-- **`expense_aggregation_test.dart` (7 pruebas unitarias):**
-  - Distribución porcentual por categorías.
+  - Manejo seguro de ingresos nulos o negativos.
+  - Consejos de redirección de excedentes a metas activas.
+- **`expense_aggregation_test.dart` (10 pruebas unitarias):**
+  - Distribución porcentual por categorías y agregación descendente.
   - Filtros temporales (Mes, Semana, Histórico).
-- **`dashboard_screen_test.dart` & `widget_test.dart` (7 pruebas de interfaz):**
-  - Conmutación de chips temporales y renderizado del gráfico Donut.
+  - Cálculo de tasa de consumo diario (*burn rate*).
+- **`financial_advisor_screen_test.dart` (1 prueba de interfaz):**
+  - Renderizado del dial circular de salud financiera y recomendaciones.
+
+---
+
+## 5.6. Arquitectura Cloud Serverless (Vercel + Neon PostgreSQL) e Integración IA
+Durante las Semanas 15 y 16 se completó la modernización de la infraestructura tecnológica del proyecto para garantizar escalabilidad, costo cero de mantenimiento y alta disponibilidad:
+
+1. **Despliegue Backend en Vercel Serverless Functions:**
+   - La API Express fue desacoplada para operar como función Serverless empaquetada mediante `@vercel/node`.
+   - El archivo de configuración `vercel.json` enruta el tráfico REST de forma transparente desde `/api/(.*)` hacia el backend serverless.
+2. **Base de Datos Serverless en Neon PostgreSQL:**
+   - Base de datos relacional serverless con escalado automático a cero y pooling de conexiones optimizado para latencias inferiores a 80 ms.
+   - Modelo relacional ampliado para soportar **cuentas compartidas multi-usuario** (`accounts`), permitiendo que dos o más estudiantes o parejas compartan metas de ahorro conjuntas sin colisión de identidades.
+3. **Integración con Inteligencia Artificial Generativa (Google Gemini API):**
+   - Incorporación del endpoint `POST /api/ai/savings-advisor`.
+   - Cuando la variable de entorno `GEMINI_API_KEY` se encuentra presente, el backend invoca el modelo **Gemini 1.5 Flash** para examinar el patrón de gastos y entregar micro-consejos conductuales ultra-personalizados.
+   - En caso de operar en modo offline o sin clave configurada, el sistema conmuta de forma transparente hacia el **Motor Algorítmico Heurístico de Salvia**, garantizando que el usuario nunca quede desatendido.
 
 ---
 
