@@ -146,5 +146,37 @@ void main() {
       expect(map['is_shared'], true);
       expect(map['collaborators'], ['Valentino', 'Astrid']);
     });
+
+    test('sortMissions orders correctly by urgent, progress and highestTarget without mutating input', () {
+      final soonDate = DateTime.now().add(const Duration(days: 10)).toIso8601String().split('T').first;
+      final laterDate = DateTime.now().add(const Duration(days: 90)).toIso8601String().split('T').first;
+
+      final m1 = SavingsMission(
+        id: 1, title: 'Lejana Alta', targetAmount: 5000.0, currentAmount: 500.0,
+        deadline: laterDate, isCompleted: false,
+      ); // 10%, 90d, S/5000
+      final m2 = SavingsMission(
+        id: 2, title: 'Urgente Media', targetAmount: 1000.0, currentAmount: 750.0,
+        deadline: soonDate, isCompleted: false,
+      ); // 75%, 10d, S/1000
+      final m3 = SavingsMission(
+        id: 3, title: 'Completada', targetAmount: 2000.0, currentAmount: 2000.0,
+        deadline: soonDate, isCompleted: true,
+      ); // 100%, completed
+
+      final original = [m1, m2, m3];
+
+      final byUrgent = SavingsMission.sortMissions(original, SavingsSortOrder.urgent);
+      expect(byUrgent.map((m) => m.id).toList(), [2, 1, 3]);
+
+      final byProgress = SavingsMission.sortMissions(original, SavingsSortOrder.progress);
+      expect(byProgress.map((m) => m.id).toList(), [3, 2, 1]);
+
+      final byTarget = SavingsMission.sortMissions(original, SavingsSortOrder.highestTarget);
+      expect(byTarget.map((m) => m.id).toList(), [1, 3, 2]);
+
+      // Original list must remain untouched
+      expect(original.map((m) => m.id).toList(), [1, 2, 3]);
+    });
   });
 }

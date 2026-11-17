@@ -179,5 +179,39 @@ void main() {
       expect(find.text('Asesor Financiero IA'), findsOneWidget);
       expect(find.text('Diagnóstico de metas y optimización de ahorro'), findsOneWidget);
     });
+
+    testWidgets('changes sort order using SavingsSortButton menu', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            savingsProvider.overrideWith((ref) => MockSavingsNotifier(sampleMissions)),
+          ],
+          child: const MaterialApp(
+            home: SavingsScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final sortBtn = find.byKey(const Key('btn_ordenar_metas'));
+      expect(sortBtn, findsOneWidget);
+      expect(find.text('Recientes'), findsOneWidget);
+
+      await tester.tap(sortBtn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Mayor objetivo'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mayor objetivo'), findsOneWidget);
+    });
   });
 }
