@@ -17,6 +17,11 @@ const TZ_OFFSET_MS = -5 * 60 * 60 * 1000;
 const localDateStr = (date = new Date()) =>
   new Date(date.getTime() + TZ_OFFSET_MS).toISOString().split('T')[0];
 
+const HABIT_BASE_POINTS = 10;
+const HABIT_STREAK_BONUS = 15;
+const HABIT_BONUS_INTERVAL = 7;
+const habitResponse = habit => ({ ...habit, points_reward: HABIT_BASE_POINTS });
+
 // Configuración de PostgreSQL en Neon
 let pool = null;
 let useMockDb = false;
@@ -78,10 +83,10 @@ const mockDb = {
     { id: 3, user_id: "google_mock_123", title: "Fondo de Ahorro para Viaje", target_amount: 600.00, current_amount: 600.00, deadline: "2026-07-20", icon_name: "flight", is_completed: true }
   ],
   habits: [
-    { id: 1, user_id: "google_mock_123", title: "Levantarme a las 6:00 AM", description: "Aprovechar las primeras horas del día.", points_reward: 15, streak: 3, last_completed_at: localDateStr(new Date(Date.now() - 3600000 * 24)) },
+    { id: 1, user_id: "google_mock_123", title: "Levantarme a las 6:00 AM", description: "Aprovechar las primeras horas del día.", points_reward: HABIT_BASE_POINTS, streak: 3, last_completed_at: localDateStr(new Date(Date.now() - 3600000 * 24)) },
     { id: 2, user_id: "google_mock_123", title: "Comer en casa (No Restaurante)", description: "Cocinar almuerzo o cena para ahorrar.", points_reward: 10, streak: 1, last_completed_at: null },
     { id: 3, user_id: "google_mock_123", title: "Registrar gastos diarios", description: "Ingresar todo lo gastado antes de dormir.", points_reward: 10, streak: 5, last_completed_at: localDateStr() },
-    { id: 4, user_id: "google_mock_123", title: "Ahorrar S/. 10 diarios", description: "Pasar S/. 10 directamente a tu alcancía.", points_reward: 20, streak: 0, last_completed_at: null }
+    { id: 4, user_id: "google_mock_123", title: "Ahorrar S/. 10 diarios", description: "Pasar S/. 10 directamente a tu alcancía.", points_reward: HABIT_BASE_POINTS, streak: 0, last_completed_at: null }
   ],
   user_points_history: []
 };
@@ -144,10 +149,10 @@ app.post('/api/auth/google', async (req, res) => {
       
       // Crear algunos hábitos por defecto
       const defaultHabits = [
-        ["Levantarme a las 6:00 AM", "Aprovechar las primeras horas del día.", 15],
-        ["Comer en casa (No Restaurante)", "Cocinar almuerzo o cena para ahorrar.", 10],
-        ["Registrar gastos diarios", "Ingresar todo lo gastado antes de dormir.", 10],
-        ["Ahorrar $5 dólares diarios", "Pasar $5 directamente a tu alcancía.", 20]
+        ["Levantarme a las 6:00 AM", "Aprovechar las primeras horas del día.", HABIT_BASE_POINTS],
+        ["Comer en casa (No Restaurante)", "Cocinar almuerzo o cena para ahorrar.", HABIT_BASE_POINTS],
+        ["Registrar gastos diarios", "Ingresar todo lo gastado antes de dormir.", HABIT_BASE_POINTS],
+        ["Ahorrar $5 dólares diarios", "Pasar $5 directamente a tu alcancía.", HABIT_BASE_POINTS]
       ];
       for (const h of defaultHabits) {
         await pool.query('INSERT INTO habits (user_id, title, description, points_reward) VALUES ($1, $2, $3, $4)', [id, h[0], h[1], h[2]]);
@@ -392,15 +397,49 @@ app.post('/api/savings-missions/:id/save', async (req, res) => {
 });
 
 // === ENDPOINTS DE HÁBITOS ===
+const cleanHabitTitle = title => title.trim().replace(/\s+/g, ' ');
+const normalizeHabitTitle = title => cleanHabitTitle(title).toLowerCase();
+const habitInputError = (title, description) => {
+  if (typeof title !== 'string' || cleanHabitTitle(title).length < 3 || cleanHabitTitle(title).length > 40) {
+    return "El título debe tener entre 3 y 40 caracteres";
+  }
+  if (typeof description !== 'string' || description.trim().length > 80) {
+    return "La descripción debe tener como máximo 80 caracteres";
+  }
+  return null;
+};
+
+// Serializa crear/editar por usuario para impedir duplicados concurrentes,
+// sin añadir columnas ni índices al esquema compartido.
+async function withHabitTitleLock(userId, work) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('salvia:habits'), hashtext($1))", [userId]);
+    const result = await work(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      console.error("Error al revertir edición de hábitos:", rollbackError.message);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 app.get('/api/habits', async (req, res) => {
   const userId = await getUserId(req);
   if (useMockDb) {
     const userHabits = mockDb.habits.filter(h => h.user_id === userId);
-    return res.json(userHabits);
+    return res.json(userHabits.map(habitResponse));
   } else {
     try {
       const habitsRes = await pool.query('SELECT *, last_completed_at::text AS last_completed_at FROM habits WHERE user_id = $1 ORDER BY created_at ASC', [userId]);
-      return res.json(habitsRes.rows);
+      return res.json(habitsRes.rows.map(habitResponse));
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -410,30 +449,41 @@ app.get('/api/habits', async (req, res) => {
 // Crear nuevo hábito personalizado
 app.post('/api/habits', async (req, res) => {
   const userId = await getUserId(req);
-  const { title, description, points_reward } = req.body;
-
-  if (!title) return res.status(400).json({ error: "El título es obligatorio" });
+  const { title, description = '' } = req.body || {};
+  const validationError = habitInputError(title, description);
+  if (validationError) return res.status(400).json({ error: validationError });
 
   const newHabit = {
-    title,
-    description: description || "",
-    points_reward: points_reward ? parseInt(points_reward) : 10,
+    title: cleanHabitTitle(title),
+    description: description.trim(),
+    points_reward: HABIT_BASE_POINTS,
     streak: 0,
     last_completed_at: null
   };
 
   if (useMockDb) {
+    if (mockDb.habits.some(h => h.user_id === userId &&
+        normalizeHabitTitle(h.title) === normalizeHabitTitle(newHabit.title))) {
+      return res.status(409).json({ error: "Ya tienes un hábito con ese nombre" });
+    }
     newHabit.id = mockDb.habits.reduce((maxId, habit) => Math.max(maxId, habit.id), 0) + 1;
     newHabit.user_id = userId;
     mockDb.habits.push(newHabit);
     return res.status(201).json(newHabit);
   } else {
     try {
-      const insertRes = await pool.query(
-        'INSERT INTO habits (user_id, title, description, points_reward) VALUES ($1, $2, $3, $4) RETURNING *',
-        [userId, newHabit.title, newHabit.description, newHabit.points_reward]
-      );
-      return res.status(201).json(insertRes.rows[0]);
+      const result = await withHabitTitleLock(userId, async client => {
+        const existing = await client.query('SELECT id, title FROM habits WHERE user_id = $1', [userId]);
+        if (existing.rows.some(h => normalizeHabitTitle(h.title) === normalizeHabitTitle(newHabit.title))) {
+          return { status: 409, body: { error: "Ya tienes un hábito con ese nombre" } };
+        }
+        const insertRes = await client.query(
+          'INSERT INTO habits (user_id, title, description, points_reward) VALUES ($1, $2, $3, $4) RETURNING *',
+          [userId, newHabit.title, newHabit.description, newHabit.points_reward]
+        );
+        return { status: 201, body: insertRes.rows[0] };
+      });
+      return res.status(result.status).json(result.body);
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -471,10 +521,10 @@ app.post('/api/habits/:id/complete', async (req, res) => {
 
     // Sumar puntos
     const user = mockDb.users.find(u => u.id === userId);
-    let pts = habit.points_reward;
-    // Multiplicador por racha cada 5 días
-    if (habit.streak % 5 === 0) {
-      pts += 15; // Bono de racha
+    let pts = HABIT_BASE_POINTS;
+    // Bono por cada semana consecutiva completada.
+    if (habit.streak % HABIT_BONUS_INTERVAL === 0) {
+      pts += HABIT_STREAK_BONUS;
     }
     
     if (user) {
@@ -489,7 +539,7 @@ app.post('/api/habits/:id/complete', async (req, res) => {
       created_at: new Date().toISOString()
     });
 
-    return res.json({ habit, points_awarded: pts, current_user_points: user ? user.points : 0 });
+    return res.json({ habit: habitResponse(habit), points_awarded: pts, current_user_points: user ? user.points : 0 });
   } else {
     let client;
     try {
@@ -522,8 +572,8 @@ app.post('/api/habits/:id/complete', async (req, res) => {
         newStreak = parseInt(habit.streak) + 1;
       }
 
-      let pts = habit.points_reward;
-      if (newStreak % 5 === 0) pts += 15; // Bono racha
+      let pts = HABIT_BASE_POINTS;
+      if (newStreak % HABIT_BONUS_INTERVAL === 0) pts += HABIT_STREAK_BONUS;
 
       // Actualizar hábito
       const updateHabitRes = await client.query(
@@ -545,7 +595,7 @@ app.post('/api/habits/:id/complete', async (req, res) => {
 
       await client.query('COMMIT');
       return res.json({
-        habit: updateHabitRes.rows[0],
+        habit: habitResponse(updateHabitRes.rows[0]),
         points_awarded: pts,
         current_user_points: updateUserRes.rows[0].points
       });
@@ -795,37 +845,45 @@ Responde en formato JSON plano: { "diagnosis": string, "daily_tip": string, "mot
 // Editar únicamente los datos configurables; no reinicia rachas ni premios.
 app.put('/api/habits/:id', async (req, res) => {
   const habitId = Number(req.params.id);
-  const { title, description = '', points_reward } = req.body || {};
+  const { title, description = '' } = req.body || {};
 
   if (!Number.isSafeInteger(habitId) || habitId <= 0) {
     return res.status(400).json({ error: "ID de hábito inválido" });
   }
-  if (typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 40) {
-    return res.status(400).json({ error: "El título debe tener entre 3 y 40 caracteres" });
-  }
-  if (typeof description !== 'string' || description.trim().length > 80) {
-    return res.status(400).json({ error: "La descripción debe tener como máximo 80 caracteres" });
-  }
-  if (!Number.isInteger(points_reward) || points_reward < 1 || points_reward > 999) {
-    return res.status(400).json({ error: "Los puntos deben ser un entero entre 1 y 999" });
-  }
-
+  const validationError = habitInputError(title, description);
+  if (validationError) return res.status(400).json({ error: validationError });
   try {
     const userId = await getUserId(req);
-    const changes = { title: title.trim(), description: description.trim(), points_reward };
+    const changes = { title: cleanHabitTitle(title), description: description.trim(), points_reward: HABIT_BASE_POINTS };
     if (useMockDb) {
       const habit = mockDb.habits.find(h => h.id === habitId && h.user_id === userId);
       if (!habit) return res.status(404).json({ error: "Hábito no encontrado" });
+      if (mockDb.habits.some(h => h.user_id === userId && h.id !== habitId &&
+          normalizeHabitTitle(h.title) === normalizeHabitTitle(changes.title))) {
+        return res.status(409).json({ error: "Ya tienes un hábito con ese nombre" });
+      }
       Object.assign(habit, changes);
       return res.json(habit);
     }
 
-    const result = await pool.query(
-      'UPDATE habits SET title = $1, description = $2, points_reward = $3 WHERE id = $4 AND user_id = $5 RETURNING *, last_completed_at::text AS last_completed_at',
-      [changes.title, changes.description, changes.points_reward, habitId, userId]
-    );
-    if (result.rowCount === 0) return res.status(404).json({ error: "Hábito no encontrado" });
-    return res.json(result.rows[0]);
+    const result = await withHabitTitleLock(userId, async client => {
+      const existing = await client.query('SELECT id, title FROM habits WHERE user_id = $1', [userId]);
+      if (!existing.rows.some(h => h.id === habitId)) {
+        return { status: 404, body: { error: "Hábito no encontrado" } };
+      }
+      if (existing.rows.some(h => h.id !== habitId &&
+          normalizeHabitTitle(h.title) === normalizeHabitTitle(changes.title))) {
+        return { status: 409, body: { error: "Ya tienes un hábito con ese nombre" } };
+      }
+      const updated = await client.query(
+        'UPDATE habits SET title = $1, description = $2, points_reward = $3 WHERE id = $4 AND user_id = $5 RETURNING *, last_completed_at::text AS last_completed_at',
+        [changes.title, changes.description, changes.points_reward, habitId, userId]
+      );
+      return updated.rowCount === 0
+        ? { status: 404, body: { error: "Hábito no encontrado" } }
+        : { status: 200, body: updated.rows[0] };
+    });
+    return res.status(result.status).json(result.body);
   } catch (err) {
     console.error("Error al editar hábito:", err.message);
     return res.status(500).json({ error: "No se pudo editar el hábito" });

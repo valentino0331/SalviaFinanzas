@@ -82,30 +82,50 @@ class HabitCard extends StatelessWidget {
                         : const Color(0xFF8B9E8F),
                     size: 20,
                   ),
-                if (streak > 0)
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Tooltip(
+                      message:
+                          'Racha actual: $streak ${streak == 1 ? 'día' : 'días'}',
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFD54F).withValues(alpha: 0.2),
+                          color: streak > 0
+                              ? const Color(0xFFFFD54F).withValues(alpha: 0.2)
+                              : const Color(0xFFF3F6F3),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          "$streak 🔥",
-                          style: GoogleFonts.outfit(
-                            fontSize: 11,
-                            color: const Color(0xFFB37400),
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.local_fire_department_outlined,
+                              size: 14,
+                              color: streak > 0
+                                  ? const Color(0xFFB37400)
+                                  : const Color(0xFF7A8B7E),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              "$streak ${streak == 1 ? 'día' : 'días'}",
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: streak > 0
+                                    ? const Color(0xFFB37400)
+                                    : const Color(0xFF7A8B7E),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
+                ),
                 if (onEdit != null || onDelete != null)
                   PopupMenuButton<HabitCardAction>(
                     tooltip: 'Opciones de ${habit.title}',

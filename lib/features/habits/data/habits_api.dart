@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/api_service.dart';
 import '../domain/habit.dart';
 import '../domain/habit_calendar.dart';
+import '../domain/habit_rewards.dart';
+import '../domain/habit_template.dart';
 import '../domain/habit_validators.dart';
 
 class HabitsApiException implements Exception {
@@ -35,18 +37,35 @@ class HabitsApi {
 
   Future<List<Habit>> getHabits() async {
     final source = await ApiService.getHabits();
-    final rows = ApiService.isOffline
-        ? await _localOperation(() => _readLocalHabits(seed: source))
-        : source.map((row) => Map<String, dynamic>.from(row as Map)).toList();
-    return rows.map(Habit.fromMap).toList();
+    if (ApiService.isOffline) {
+      final rows = await _localOperation(() => _readLocalHabits(seed: source));
+      return rows.map(Habit.fromMap).toList();
+    }
+    return _onlineHabits(
+      source.map((row) => Map<String, dynamic>.from(row as Map)).toList(),
+    );
   }
 
   Future<Habit> addHabit(Map<String, dynamic> changes) async {
+    final templateId = changes['template_id'] as String?;
+    if (templateId != null && !habitTemplates.any((t) => t.id == templateId)) {
+      throw const HabitsApiException('Recomendación no válida');
+    }
+    changes = _editableFields(changes);
     if (!ApiService.isOffline) {
-      return Habit.fromMap(await _request('POST', '/habits', changes));
+      final row = await _request('POST', '/habits', changes);
+      return (await _onlineHabits(
+        [row],
+        overrides: {(row['id'] as num).toInt(): templateId},
+      )).single;
     }
     return _localOperation(() async {
       final rows = await _readLocalHabits();
+      _checkUniqueTitle(changes['title'] as String, rows);
+      if (templateId != null &&
+          rows.any((row) => row['template_id'] == templateId)) {
+        throw const HabitsApiException('Ya adoptaste esta recomendación');
+      }
       final prefs = await SharedPreferences.getInstance();
       final nextId =
           rows.fold<int>(
@@ -61,6 +80,7 @@ class HabitsApi {
         'user_id': prefs.getString('auth_token'),
         'streak': 0,
         'last_completed_at': null,
+        'template_id': templateId,
       };
       await _writeLocalHabits([...rows, row]);
       return Habit.fromMap(row);
@@ -68,12 +88,16 @@ class HabitsApi {
   }
 
   Future<Habit> updateHabit(int id, Map<String, dynamic> changes) async {
+    changes = _editableFields(changes);
     if (!ApiService.isOffline) {
-      return Habit.fromMap(await _request('PUT', '/habits/$id', changes));
+      return (await _onlineHabits([
+        await _request('PUT', '/habits/$id', changes),
+      ])).single;
     }
     return _localOperation(() async {
       final rows = await _readLocalHabits();
       final index = _findHabit(rows, id);
+      _checkUniqueTitle(changes['title'] as String, rows, excludingId: id);
       // Solo se editan los campos del formulario: la racha y la fecha permanecen.
       rows[index] = {...rows[index], ...changes};
       await _writeLocalHabits(rows);
@@ -95,7 +119,11 @@ class HabitsApi {
 
   Future<Map<String, dynamic>> completeHabit(int id) async {
     if (!ApiService.isOffline) {
-      return _request('POST', '/habits/$id/complete');
+      final result = await _request('POST', '/habits/$id/complete');
+      final habit = (await _onlineHabits([
+        Map<String, dynamic>.from(result['habit'] as Map),
+      ])).single;
+      return {...result, 'habit': habit.toMap()};
     }
     return _localOperation(() async {
       final rows = await _readLocalHabits();
@@ -109,7 +137,7 @@ class HabitsApi {
           habit.isCompletedOn(today.subtract(const Duration(days: 1)))
           ? habit.streak + 1
           : 1;
-      final points = habit.pointsReward + (streak % 5 == 0 ? 15 : 0);
+      final points = HabitRewards.pointsForStreak(streak);
       final user = await ApiService.getProfile();
       if (user == null) {
         throw const HabitsApiException('Inicia sesión para completar hábitos');
@@ -192,7 +220,8 @@ class HabitsApi {
           (pending['streak'] as int) <= 0 ||
           pending['points_awarded'] is! int ||
           (pending['points_awarded'] as int) <= 0 ||
-          (pending['points_awarded'] as int) > HabitValidators.maxPoints + 15 ||
+          (pending['points_awarded'] as int) >
+              HabitRewards.maxLegacyPendingPoints ||
           date is! String ||
           date.length != 10 ||
           DateTime.tryParse(date)?.toIso8601String().split('T').first != date) {
@@ -272,11 +301,12 @@ class HabitsApi {
       }
     }
     checkSession();
-    user!.addAll({
-      'points': updatedUser['points'],
-      'streak': updatedUser['streak'],
-      _receiptField: updatedUser[_receiptField],
-    });
+    // El perfil inicial de core puede ser Map<String, Object> aunque su
+    // interfaz sea Map<String, dynamic>. addAll comprueba el tipo del mapa
+    // completo; asignar cada valor permite actualizar también ese perfil.
+    user!['points'] = (updatedUser['points'] as num).toInt();
+    user['streak'] = (updatedUser['streak'] as num).toInt();
+    user[_receiptField] = updatedUser[_receiptField] as String;
     try {
       await prefs.remove('${key}_pending_completion');
     } catch (_) {
@@ -341,6 +371,66 @@ class HabitsApi {
     }
   }
 
+  Map<String, dynamic> _editableFields(Map<String, dynamic> changes) {
+    final title = (changes['title'] ?? '') as String;
+    final description = (changes['description'] ?? '') as String;
+    final error = HabitValidators.validateHabit(
+      title: title,
+      description: description,
+    );
+    if (error != null) throw HabitValidationException(error);
+    return {
+      'title': HabitValidators.cleanTitle(title),
+      'description': description.trim(),
+      'points_reward': HabitRewards.basePoints,
+    };
+  }
+
+  void _checkUniqueTitle(
+    String title,
+    List<Map<String, dynamic>> rows, {
+    int? excludingId,
+  }) {
+    final error = HabitValidators.validateUniqueTitle(
+      title,
+      rows
+          .where((row) => row['id'] != excludingId)
+          .map((row) => row['title'] as String),
+    );
+    if (error != null) throw HabitValidationException(error);
+  }
+
+  /// Sin una columna de plantilla en el backend, esta asociación pertenece
+  /// al dispositivo y está separada de la colección usada en modo offline.
+  Future<List<Habit>> _onlineHabits(
+    List<Map<String, dynamic>> rows, {
+    Map<int, String?> overrides = const {},
+  }) => _serializeLocal(() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${_localKey(prefs)}_online_templates';
+    final raw = prefs.getString(key);
+    final metadata = raw == null
+        ? <String, dynamic>{}
+        : Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    final habits = rows.map((row) {
+      final id = (row['id'] as num).toInt();
+      final idKey = id.toString();
+      if (overrides.containsKey(id)) {
+        metadata[idKey] = overrides[id];
+      } else if (!metadata.containsKey(idKey)) {
+        metadata[idKey] = templateIdForTitle(row['title'] as String);
+      }
+      return Habit.fromMap({...row, 'template_id': metadata[idKey]});
+    }).toList();
+    final encoded = jsonEncode(metadata);
+    if (encoded != raw && !await prefs.setString(key, encoded)) {
+      throw const HabitsApiException(
+        'No se pudo guardar la identidad de la recomendación. Actualiza hábitos.',
+      );
+    }
+    return habits;
+  });
+
   String _localKey(SharedPreferences prefs) {
     final token = prefs.getString('auth_token');
     if (token == null || token.isEmpty) {
@@ -363,7 +453,14 @@ class HabitsApi {
     final rows = source
         .map((row) => Map<String, dynamic>.from(row as Map))
         .toList();
-    if (saved == null) {
+    var migrated = false;
+    for (final row in rows) {
+      if (!row.containsKey('template_id')) {
+        row['template_id'] = templateIdForTitle(row['title'] as String);
+        migrated = true;
+      }
+    }
+    if (saved == null || migrated) {
       if (!await prefs.setString(key, jsonEncode(rows))) {
         throw const HabitsApiException('No se pudieron guardar los hábitos');
       }

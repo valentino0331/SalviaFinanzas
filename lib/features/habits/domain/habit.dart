@@ -1,4 +1,5 @@
 import 'habit_calendar.dart';
+import 'habit_rewards.dart';
 
 /// Modelo de dominio inmutable que representa un hábito diario del usuario.
 ///
@@ -13,6 +14,7 @@ class Habit {
     required this.pointsReward,
     this.streak = 0,
     this.lastCompletedAt,
+    this.templateId,
   });
 
   final int id;
@@ -20,6 +22,7 @@ class Habit {
   final String description;
   final int pointsReward;
   final int streak;
+  final String? templateId;
 
   /// Día de la última vez que se completó el hábito.
   /// El backend la entrega como texto `YYYY-MM-DD` en `last_completed_at`.
@@ -30,9 +33,10 @@ class Habit {
       id: (map['id'] as num?)?.toInt() ?? 0,
       title: (map['title'] ?? '') as String,
       description: (map['description'] ?? '') as String,
-      pointsReward: (map['points_reward'] as num?)?.toInt() ?? 10,
+      pointsReward: HabitRewards.basePoints,
       streak: (map['streak'] as num?)?.toInt() ?? 0,
       lastCompletedAt: _parseDate(map['last_completed_at']),
+      templateId: map['template_id'] as String?,
     );
   }
 
@@ -44,6 +48,7 @@ class Habit {
       'points_reward': pointsReward,
       'streak': streak,
       'last_completed_at': _formatDate(lastCompletedAt),
+      'template_id': templateId,
     };
   }
 

@@ -7,6 +7,8 @@ import '../../../core/providers.dart';
 import '../data/habits_api.dart';
 import '../domain/habit.dart';
 import '../domain/habit_calendar.dart';
+import '../domain/habit_rewards.dart';
+import '../domain/habit_template.dart';
 import '../domain/habit_validators.dart';
 
 final habitsClockProvider = Provider<DateTime Function()>(
@@ -35,6 +37,11 @@ final habitsPendingProvider = StateProvider<Set<int>>((ref) {
   return {};
 });
 
+final habitsRefreshErrorProvider = StateProvider<String?>((ref) {
+  ref.watch(authProvider.select((state) => state.user?['id']));
+  return null;
+});
+
 /// Estado propio de la feature; se descarta al cambiar la cuenta.
 final habitsViewProvider =
     StateNotifierProvider<HabitsController, AsyncValue<List<Habit>>>((ref) {
@@ -54,7 +61,9 @@ class HabitsController extends StateNotifier<AsyncValue<List<Habit>>> {
   Future<void> refresh() async {
     if (_ref.read(habitsPendingProvider).isNotEmpty) return;
     final revision = ++_revision;
-    if (!state.hasValue) state = const AsyncValue.loading();
+    final previous = state.valueOrNull;
+    _ref.read(habitsRefreshErrorProvider.notifier).state = null;
+    if (previous == null) state = const AsyncValue.loading();
     try {
       final habits = await _api.getHabits();
       final points = await _api.getLocalPoints();
@@ -64,7 +73,13 @@ class HabitsController extends StateNotifier<AsyncValue<List<Habit>>> {
       }
     } catch (error, stack) {
       if (mounted && revision == _revision) {
-        state = AsyncValue.error(error, stack);
+        if (previous == null) {
+          state = AsyncValue.error(error, stack);
+        } else {
+          state = AsyncValue.data(previous);
+          _ref.read(habitsRefreshErrorProvider.notifier).state = error
+              .toString();
+        }
       }
     }
   }
@@ -157,24 +172,30 @@ class HabitsActions {
 
   Future<void> refresh() => _ref.read(habitsViewProvider.notifier).refresh();
 
-  Future<void> addHabit({
-    required String title,
-    required String description,
-    required int pointsReward,
-  }) {
+  Future<void> addHabit({required String title, required String description}) {
     return _ref
         .read(habitsViewProvider.notifier)
-        .addHabit(_validatedData(title, description, pointsReward));
+        .addHabit(_validatedData(title, description));
   }
 
   Future<void> updateHabit({
     required int id,
     required String title,
     required String description,
-    required int pointsReward,
   }) => _ref
       .read(habitsViewProvider.notifier)
-      .updateHabit(id, _validatedData(title, description, pointsReward));
+      .updateHabit(id, _validatedData(title, description, excludingId: id));
+
+  Future<void> adoptHabit(HabitTemplate template) {
+    final habits = _ref.read(habitsViewProvider).valueOrNull ?? const <Habit>[];
+    if (habits.any((habit) => habit.templateId == template.id)) {
+      throw HabitValidationException('Ya adoptaste esta recomendación');
+    }
+    return _ref.read(habitsViewProvider.notifier).addHabit({
+      ..._validatedData(template.title, template.description),
+      'template_id': template.id,
+    });
+  }
 
   Future<void> deleteHabit(int id) =>
       _ref.read(habitsViewProvider.notifier).deleteHabit(id);
@@ -184,17 +205,26 @@ class HabitsActions {
 
   Map<String, dynamic> _validatedData(
     String title,
-    String description,
-    int points,
-  ) {
-    final error =
-        HabitValidators.validateHabit(title: title, points: points) ??
-        HabitValidators.validateDescription(description);
+    String description, {
+    int? excludingId,
+  }) {
+    final error = HabitValidators.validateHabit(
+      title: title,
+      description: description,
+    );
     if (error != null) throw HabitValidationException(error);
+    final habits = _ref.read(habitsViewProvider).valueOrNull ?? const <Habit>[];
+    final duplicateError = HabitValidators.validateUniqueTitle(
+      title,
+      habits
+          .where((habit) => habit.id != excludingId)
+          .map((habit) => habit.title),
+    );
+    if (duplicateError != null) throw HabitValidationException(duplicateError);
     return {
-      'title': title.trim(),
+      'title': HabitValidators.cleanTitle(title),
       'description': description.trim(),
-      'points_reward': points,
+      'points_reward': HabitRewards.basePoints,
     };
   }
 }
