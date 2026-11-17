@@ -1,3 +1,5 @@
+import 'habit_calendar.dart';
+
 /// Modelo de dominio inmutable que representa un hábito diario del usuario.
 ///
 /// La feature venía manipulando `Map<String, dynamic>` sueltos en la UI, lo
@@ -54,8 +56,18 @@ class Habit {
         completed.day == day.day;
   }
 
-  /// Atajo para el día de hoy, usado por la capa de presentación.
-  bool get isCompletedToday => isCompletedOn(DateTime.now());
+  /// El día de hoy usa la misma zona horaria que el backend.
+  bool get isCompletedToday => isCompletedOn(HabitCalendar.today());
+
+  /// La racha permanece activa hoy si se completó hoy o ayer.
+  /// El valor almacenado no se modifica al calcular su vigencia.
+  int streakOn(DateTime day) {
+    if (isCompletedOn(day) ||
+        isCompletedOn(day.subtract(const Duration(days: 1)))) {
+      return streak;
+    }
+    return 0;
+  }
 
   static DateTime? _parseDate(Object? raw) {
     if (raw == null) return null;

@@ -14,8 +14,33 @@ import 'widgets/hero_habits_card.dart';
 import 'widgets/habit_card.dart';
 import 'widgets/recommendation_card.dart';
 
-class HabitsScreen extends ConsumerWidget {
+class HabitsScreen extends ConsumerStatefulWidget {
   const HabitsScreen({super.key});
+
+  @override
+  ConsumerState<HabitsScreen> createState() => _HabitsScreenState();
+}
+
+class _HabitsScreenState extends ConsumerState<HabitsScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(habitsTodayProvider);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   void _completeHabit(
     BuildContext context,
@@ -45,8 +70,9 @@ class HabitsScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final habitsState = ref.watch(habitsViewProvider);
+    final today = ref.watch(habitsTodayProvider);
     final pending = ref.watch(habitsPendingProvider);
     final authState = ref.watch(authProvider);
     final user = authState.user;
@@ -68,8 +94,25 @@ class HabitsScreen extends ConsumerWidget {
           loading: () => const Center(
             child: CircularProgressIndicator(color: RusticTheme.primaryGreen),
           ),
-          error: (err, _) =>
-              Center(child: Text("Error al cargar hábitos: $err")),
+          error: (err, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Error al cargar hábitos: $err",
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => ref.read(habitsActionsProvider).refresh(),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            ),
+          ),
           data: (habits) {
             final activeTitles = habits.map((h) => h.title).toSet();
             final pendingRecommendations = habitTemplates
@@ -155,11 +198,12 @@ class HabitsScreen extends ConsumerWidget {
                         return HabitCard(
                           key: ValueKey(habit.id),
                           habit: habit,
+                          day: today,
                           enabled: pending.isEmpty,
                           isBusy: pending.contains(habit.id),
                           onEdit: () => showEditHabitDialog(context, habit),
                           onDelete: () => showDeleteHabitDialog(context, habit),
-                          onTap: habit.isCompletedToday
+                          onTap: habit.isCompletedOn(today)
                               ? null
                               : () => _completeHabit(
                                   context,
