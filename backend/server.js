@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -874,16 +875,48 @@ app.get('/api/accounts/:id/members', async (req, res) => {
   }
 });
 
-app.get('/api/health', (req, res) => {
+app.get('/', (req, res) => {
   res.json({
+    app: 'Salvia Finanzas API',
     status: 'ok',
     database: useMockDb ? 'mock_in_memory' : 'postgres_neon',
     serverless: !!process.env.VERCEL,
+    health: '/api/health',
   });
 });
 
-// Si no está corriendo como Serverless Function en Vercel, iniciar servidor HTTP
-if (!process.env.VERCEL) {
+app.get('/api/health', async (req, res) => {
+  if (useMockDb || !pool) {
+    return res.json({
+      status: 'ok',
+      database: 'mock_in_memory',
+      db_connected: false,
+      serverless: !!process.env.VERCEL,
+    });
+  }
+
+  try {
+    const ping = await pool.query('SELECT NOW() AS db_time');
+    return res.json({
+      status: 'ok',
+      database: 'postgres_neon',
+      db_connected: true,
+      db_time: ping.rows[0].db_time,
+      serverless: !!process.env.VERCEL,
+    });
+  } catch (err) {
+    return res.status(503).json({
+      status: 'degraded',
+      database: 'postgres_neon',
+      db_connected: false,
+      error: err.message,
+      serverless: !!process.env.VERCEL,
+    });
+  }
+});
+
+// Solo iniciar servidor HTTP local cuando se ejecuta directamente (node server.js)
+if (require.main === module && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`🍁 Servidor rústico de finanzas corriendo en http://localhost:${PORT}`);
   });

@@ -4,8 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../features/advisor/domain/financial_health_engine.dart';
 
 class ApiService {
-  // Cambia esto por tu URL de Render en producción.
-  static const String baseUrl = 'https://finanzas-c2tc.onrender.com/api';
+  // URL del backend desplegado en Vercel (conectado a Neon PostgreSQL).
+  static const String baseUrl = 'https://salvia-finanzas-two.vercel.app/api';
   
   static String? _token;
   static bool _isOfflineMode = false;
