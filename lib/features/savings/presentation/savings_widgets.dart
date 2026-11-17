@@ -214,6 +214,75 @@ class SavingsFilterChips extends StatelessWidget {
   );
 }
 
+/// Selector desplegable para ordenar las metas de ahorro por prioridad o avance.
+class SavingsSortButton extends StatelessWidget {
+  const SavingsSortButton({
+    super.key,
+    required this.current,
+    required this.onChanged,
+  });
+
+  final SavingsSortOrder current;
+  final ValueChanged<SavingsSortOrder> onChanged;
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<SavingsSortOrder>(
+    key: const Key('btn_ordenar_metas'),
+    initialValue: current,
+    onSelected: onChanged,
+    color: Colors.white,
+    surfaceTintColor: Colors.transparent,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    itemBuilder: (ctx) => SavingsSortOrder.values.map((order) {
+      final isSel = order == current;
+      return PopupMenuItem<SavingsSortOrder>(
+        value: order,
+        child: Row(
+          children: [
+            Icon(
+              isSel ? Icons.check_circle_rounded : Icons.circle_outlined,
+              size: 16,
+              color: isSel ? const Color(0xFF009668) : const Color(0xFF9EABA1),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              order.label,
+              style: GoogleFonts.outfit(
+                fontSize: 13,
+                fontWeight: isSel ? FontWeight.w800 : FontWeight.w500,
+                color: isSel ? const Color(0xFF132A1D) : const Color(0xFF526E5D),
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList(),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD3E0D4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.sort_rounded, size: 14, color: Color(0xFF285038)),
+          const SizedBox(width: 4),
+          Text(
+            current.label,
+            style: GoogleFonts.outfit(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF285038),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class EmptyMissionsCard extends StatelessWidget {
   const EmptyMissionsCard({super.key, required this.filter, required this.onCreateTap});
   final SavingsFilter filter;

@@ -190,6 +190,35 @@ class SavingsMission {
     );
   }
 
+  /// Ordena una lista de metas sin mutar la original según el criterio elegido.
+  static List<SavingsMission> sortMissions(
+    List<SavingsMission> missions,
+    SavingsSortOrder order,
+  ) {
+    final copy = List<SavingsMission>.from(missions);
+    switch (order) {
+      case SavingsSortOrder.recent:
+        return copy;
+      case SavingsSortOrder.urgent:
+        copy.sort((a, b) {
+          if (a.isCompleted != b.isCompleted) return a.isCompleted ? 1 : -1;
+          final da = a.daysRemaining;
+          final db = b.daysRemaining;
+          if (da == null && db == null) return 0;
+          if (da == null) return 1;
+          if (db == null) return -1;
+          return da.compareTo(db);
+        });
+        return copy;
+      case SavingsSortOrder.progress:
+        copy.sort((a, b) => b.progressFraction.compareTo(a.progressFraction));
+        return copy;
+      case SavingsSortOrder.highestTarget:
+        copy.sort((a, b) => b.targetAmount.compareTo(a.targetAmount));
+        return copy;
+    }
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) || (other is SavingsMission && other.id == id);
@@ -200,6 +229,27 @@ class SavingsMission {
   @override
   String toString() =>
       'SavingsMission(id: $id, title: $title, progress: $progressPercent%, shared: $isShared)';
+}
+
+// ── Criterios de ordenamiento de metas ─────────────────────────────────────
+
+/// Criterios disponibles para ordenar la lista de metas de ahorro.
+enum SavingsSortOrder {
+  recent,        // Orden por defecto
+  urgent,        // Menor cantidad de días restantes primero
+  progress,      // Mayor porcentaje completado primero
+  highestTarget, // Mayor monto objetivo primero
+}
+
+extension SavingsSortOrderX on SavingsSortOrder {
+  String get label {
+    switch (this) {
+      case SavingsSortOrder.recent:        return 'Recientes';
+      case SavingsSortOrder.urgent:        return 'Más urgentes';
+      case SavingsSortOrder.progress:      return 'Mayor progreso';
+      case SavingsSortOrder.highestTarget: return 'Mayor objetivo';
+    }
+  }
 }
 
 // ── Enumeración de estado de planta ────────────────────────────────────────

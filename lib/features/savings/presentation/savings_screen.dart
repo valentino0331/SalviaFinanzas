@@ -18,6 +18,7 @@ class SavingsScreen extends ConsumerStatefulWidget {
 
 class _SavingsScreenState extends ConsumerState<SavingsScreen> {
   SavingsFilter _filter = SavingsFilter.all;
+  SavingsSortOrder _sortOrder = SavingsSortOrder.recent;
 
   static IconData _missionIcon(String? name) {
     const map = {
@@ -674,13 +675,14 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                 .map((m) => SavingsMission.fromMap(m as Map<String, dynamic>))
                 .toList();
 
-            // Aplicar filtro activo
-            final missions = switch (_filter) {
+            // Aplicar filtro y ordenamiento activo
+            final filteredMissions = switch (_filter) {
               SavingsFilter.active => allMissions.where((m) => !m.isCompleted).toList(),
               SavingsFilter.completed => allMissions.where((m) => m.isCompleted).toList(),
               SavingsFilter.shared => allMissions.where((m) => m.isShared).toList(),
               SavingsFilter.all => allMissions,
             };
+            final missions = SavingsMission.sortMissions(filteredMissions, _sortOrder);
 
             // Calculos agregados para el Hero Dial
             final totalSaved = allMissions.fold(0.0, (s, m) => s + m.currentAmount);
@@ -736,20 +738,23 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                   _AdvisorNoteCard(missions: allMissions, onCreateTap: _showAddMissionDialog),
                   const SizedBox(height: 26),
 
-                  // Encabezado de sección con filtros (Todas, Activas, Hechas, Compartidas)
+                  // Encabezado de sección con selector de ordenamiento y filtros
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     Text(
                       'Tus Metas de Ahorro',
                       style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w800, color: const Color(0xFF132A1D)),
                     ),
-                    Flexible(
-                      child: SavingsFilterChips(
-                        current: _filter,
-                        onChanged: (f) => setState(() => _filter = f),
-                        allCnt: allMissions.length,
-                      ),
+                    SavingsSortButton(
+                      current: _sortOrder,
+                      onChanged: (s) => setState(() => _sortOrder = s),
                     ),
                   ]),
+                  const SizedBox(height: 10),
+                  SavingsFilterChips(
+                    current: _filter,
+                    onChanged: (f) => setState(() => _filter = f),
+                    allCnt: allMissions.length,
+                  ),
                   const SizedBox(height: 12),
 
                   // Lista filtrada de metas o estado vacío
