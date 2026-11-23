@@ -7,7 +7,9 @@ import '../../expenses/application/gestor_gastos.dart';
 import '../../expenses/presentation/expense_form.dart';
 import 'balance_card.dart';
 import 'category_chart_card.dart';
+import 'edit_income_sheet.dart';
 import 'health_card.dart';
+import 'quick_expense_bar.dart';
 import 'recent_expenses_section.dart';
 
 
@@ -47,12 +49,16 @@ class HomeScreen extends ConsumerWidget {
             children: [
               _Header(initials: ref.watch(userInitialsProvider)),
               const SizedBox(height: 18),
-              BalanceCard(summary: summary),
+              BalanceCard(
+                summary: summary,
+                onEditIncome: () => showEditIncomeSheet(context),
+              ),
               const SizedBox(height: 14),
               const HealthCard(),
               const SizedBox(height: 14),
               CategoryChartCard(summary: summary),
               const SizedBox(height: 24),
+              const QuickExpenseBar(),
               const RecentExpensesSection(),
             ],
           ),

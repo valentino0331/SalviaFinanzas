@@ -7,9 +7,12 @@ import '../../expenses/application/gestor_gastos.dart';
 
 
 class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key, required this.summary});
+  const BalanceCard({super.key, required this.summary, this.onEditIncome});
 
   final ExpenseSummary summary;
+
+  /// Si se pasa, la fila de ingresos se vuelve tocable para editarlos.
+  final VoidCallback? onEditIncome;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +91,12 @@ class BalanceCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Container(
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onEditIncome,
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.16),
@@ -111,11 +119,13 @@ class BalanceCard extends StatelessWidget {
                         ),
                       ),
 
-                      Icon(Icons.sort_rounded,
-                          size: 18, color: Colors.white.withValues(alpha: 0.5)),
+                      Icon(Icons.edit_rounded,
+                          size: 18, color: Colors.white.withValues(alpha: 0.7)),
                     ],
                   ),
                 ),
+                    ),
+                  ),
               ],
             ),
           ),
