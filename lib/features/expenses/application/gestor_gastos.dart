@@ -4,12 +4,13 @@ import '../data/expense_repository.dart';
 import '../domain/expense.dart';
 import '../domain/expense_category.dart';
 import '../domain/expense_validators.dart';
+import 'gestor_ingresos.dart';
+
+export 'gestor_ingresos.dart' show monthlyIncomeProvider;
 
 final expenseRepositoryProvider = Provider<ExpenseRepository>(
   (ref) => LocalExpenseRepository(),
 );
-
-final monthlyIncomeProvider = StateProvider<double>((ref) => 5000.0);
 
 final gestorGastosProvider =
     StateNotifierProvider<GestorGastos, AsyncValue<List<Expense>>>(

@@ -5,8 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/app_theme.dart';
 import '../../../core/formatters.dart';
 import '../../expenses/application/gestor_gastos.dart';
+import '../../expenses/application/gestor_rapidos.dart';
 import '../../expenses/domain/expense.dart';
+import '../../expenses/domain/quick_expense.dart';
 import '../../expenses/presentation/expense_form.dart';
+import 'quick_expense_bar.dart';
 
 class RecentExpensesSection extends ConsumerStatefulWidget {
   const RecentExpensesSection({super.key});
@@ -190,6 +193,32 @@ class _ExpenseTile extends ConsumerWidget {
     }
   }
 
+  Future<void> _agregarARapidos(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final notifier = ref.read(quickExpensesProvider.notifier);
+    final item = QuickExpense(
+      label: expense.detail.isNotEmpty ? expense.detail : expense.category.label,
+      amount: expense.amount,
+      category: expense.category,
+    );
+    final confirmado = await confirmarRegistroRapido(
+      context,
+      titulo: '¿Añadir a registro rápido?',
+      detalle: '${item.label} · S/ ${formatMoney(item.amount)}',
+      accion: 'Añadir',
+      colorAccion: AppColors.actionGreen,
+    );
+    if (!confirmado) return;
+    final error = await notifier.agregar(item);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(error ?? '${item.label} añadido a registro rápido 🌿'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final category = expense.category;
@@ -211,52 +240,56 @@ class _ExpenseTile extends ConsumerWidget {
           child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
         ),
         onDismissed: (_) => _eliminar(context, ref),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: category.color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(13),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onLongPress: () => _agregarARapidos(context, ref),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: category.color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(category.icon, color: category.color, size: 21),
                 ),
-                child: Icon(category.icon, color: category.color, size: 21),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${category.label} · ${formatExpenseDate(expense.date)}',
-                      style: GoogleFonts.outfit(fontSize: 11.5, color: AppColors.textMuted),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${category.label} · ${formatExpenseDate(expense.date)}',
+                        style: GoogleFonts.outfit(fontSize: 11.5, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Text(
-                '-S/ ${formatMoney(expense.amount)}',
-                style: GoogleFonts.outfit(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.danger,
+                Text(
+                  '-S/ ${formatMoney(expense.amount)}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.danger,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
