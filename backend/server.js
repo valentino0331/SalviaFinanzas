@@ -915,8 +915,8 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Solo iniciar servidor HTTP local cuando se ejecuta directamente (node server.js)
-if (require.main === module && !process.env.VERCEL) {
+// Si no está corriendo como Serverless Function en Vercel, iniciar servidor HTTP
+if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`🍁 Servidor rústico de finanzas corriendo en http://localhost:${PORT}`);
   });
