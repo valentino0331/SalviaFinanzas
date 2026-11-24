@@ -103,6 +103,39 @@ class GestorGastos extends StateNotifier<AsyncValue<List<Expense>>> {
     return nuevo;
   }
 
+  Future<Expense> editarGasto({
+    required int idGasto,
+    required double monto,
+    required ExpenseCategory categoria,
+    String detalle = '',
+  }) async {
+    final error = ExpenseValidators.validateExpense(
+      amount: monto,
+      category: categoria,
+      detail: detalle,
+    );
+    if (error != null) throw ExpenseValidationException(error);
+
+    final actuales = state.valueOrNull ?? const <Expense>[];
+    if (!actuales.any((e) => e.id == idGasto)) {
+      throw ExpenseValidationException('El gasto ya no existe');
+    }
+
+    final editado = await _repo.actualizar(
+      id: idGasto,
+      amount: double.parse(monto.toStringAsFixed(2)),
+      category: categoria,
+      detail: detalle.trim(),
+    );
+
+    final lista = [
+      for (final e in actuales)
+        if (e.id == idGasto) editado else e,
+    ]..sort((a, b) => b.date.compareTo(a.date));
+    state = AsyncValue.data(lista);
+    return editado;
+  }
+
   Future<void> eliminarGasto(int idGasto) async {
     final actuales = state.valueOrNull ?? const <Expense>[];
     if (!actuales.any((e) => e.id == idGasto)) return;
