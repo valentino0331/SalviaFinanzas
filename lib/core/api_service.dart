@@ -594,4 +594,54 @@ class ApiService {
     }
     throw Exception("Error al cargar reporte de asesor");
   }
+
+  // ASESOR IA CON OPENROUTER + RAG (Finanzas y Buenos Hábitos)
+  static Future<Map<String, dynamic>> askSalviaAi({String? question}) async {
+    final user = _localDb['user'] as Map<String, dynamic>?;
+    final userId = user?['id']?.toString() ?? 'google_mock_123';
+
+    if (!_isOfflineMode) {
+      try {
+        final res = await http
+            .post(
+              Uri.parse('$baseUrl/ai/savings-advisor'),
+              headers: _headers,
+              body: jsonEncode({
+                'user_id': userId,
+                if (question != null && question.trim().isNotEmpty) 'question': question.trim(),
+              }),
+            )
+            .timeout(const Duration(seconds: 12));
+        if (res.statusCode == 200) {
+          return jsonDecode(res.body) as Map<String, dynamic>;
+        }
+      } catch (_) {
+        // Fallback offline con conocimiento base local si el servidor no responde
+      }
+    }
+
+    return {
+      'source': 'salvia_offline_rag_fallback',
+      'model': 'local-fallback',
+      'diagnosis':
+          'Regla 50/30/20: Destina 50% a necesidades, 30% a deseos y 20% a tus metas de ahorro.',
+      'daily_tip':
+          'Aplica el reto del redondeo en tus gastos de hoy y transfiere la diferencia a tu meta activa.',
+      'habit_tip':
+          'Hábito atómico: registra tus gastos en 2 minutos cada noche antes de dormir para cuidar tu racha.',
+      'motivation': '¡Tu jardín financiero florece con cada pequeño hábito diario! 🌱✨',
+      'rag_sources': [
+        {
+          'id': 'fin_50_30_20',
+          'title': 'Regla 50/30/20 de Presupuesto Personal',
+          'category': 'finanzas',
+        },
+        {
+          'id': 'hab_atomicos_apilamiento',
+          'title': 'Hábitos Atómicos y Apilamiento',
+          'category': 'habitos',
+        },
+      ],
+    };
+  }
 }

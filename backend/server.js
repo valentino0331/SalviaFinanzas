@@ -3,6 +3,9 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const { generateOpenRouterAdvice } = require('./services/openrouter_service');
+const { retrieveRelevantKnowledge } = require('./rag/retriever');
+const { FINANCIAL_KNOWLEDGE_BASE } = require('./rag/knowledge_base');
 
 const app = express();
 app.use(cors());
@@ -760,86 +763,93 @@ app.get('/api/financial-advisor', async (req, res) => {
   });
 });
 
-// === ENDPOINT: ASESOR FINANCIERO Y MONITOREO CON IA ===
-app.post('/api/ai/savings-advisor', async (req, res) => {
+// === ENDPOINT: ASESOR FINANCIERO Y MONITOREO CON IA (OpenRouter + RAG) ===
+async function handleAiAdvisorRequest(req, res) {
   try {
-    const { user_id } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
+    const { user_id, question } = req.body || {};
+    const targetUserId = user_id || (await getUserId(req));
 
-    // Obtener contexto de finanzas del usuario
+    // Obtener contexto de finanzas y hábitos del usuario
     let user = null;
     let missions = [];
     let recentExpenses = [];
+    let habits = [];
 
     if (useMockDb) {
-      user = mockDb.users.find(u => u.id === (user_id || "google_mock_123")) || mockDb.users[0];
+      user = mockDb.users.find(u => u.id === targetUserId) || mockDb.users[0];
       missions = mockDb.savings_missions.filter(m => m.user_id === user.id);
       recentExpenses = mockDb.expenses.filter(e => e.user_id === user.id);
+      habits = mockDb.habits.filter(h => h.user_id === user.id);
     } else {
-      const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [user_id || 'google_mock_123']);
+      const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [targetUserId]);
       user = userRes.rows[0];
-      const mRes = await pool.query('SELECT * FROM savings_missions WHERE user_id = $1', [user?.id]);
+      const resolvedId = user?.id || targetUserId;
+      const [mRes, expRes, habRes] = await Promise.all([
+        pool.query('SELECT * FROM savings_missions WHERE user_id = $1', [resolvedId]),
+        pool.query('SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC LIMIT 20', [resolvedId]),
+        pool.query('SELECT title, streak, points_reward FROM habits WHERE user_id = $1', [resolvedId]),
+      ]);
       missions = mRes.rows;
-      const expRes = await pool.query('SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC LIMIT 20', [user?.id]);
       recentExpenses = expRes.rows;
+      habits = habRes.rows;
     }
 
     const totalSpent = recentExpenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
     const activeMissions = missions.filter(m => !m.is_completed);
 
-    if (apiKey) {
-      try {
-        const prompt = `Actúa como Salvia, un asesor financiero amigable y gamificado para jóvenes estudiantes.
-Analiza este perfil:
-- Ingreso mensual: S/ ${user?.monthly_income || 1500}
-- Gastos recientes (últimos 30 días): S/ ${totalSpent}
-- Metas de ahorro activas: ${JSON.stringify(activeMissions.map(m => ({ title: m.title, meta: m.target_amount, actual: m.current_amount, deadline: m.deadline })))}
-
-Entrega un diagnóstico breve con:
-1. Una recomendación de ahorro personalizada para acelerar su meta principal.
-2. Un micropaso diario accionable para recortar gastos hormiga.
-3. Un mensaje motivacional estilo botánico (semilla/florecer).
-Responde en formato JSON plano: { "diagnosis": string, "daily_tip": string, "motivation": string }`;
-
-        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          })
-        });
-
-        if (geminiResponse.ok) {
-          const data = await geminiResponse.json();
-          const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (aiText) {
-            const parsed = JSON.parse(aiText);
-            return res.json({ source: 'gemini_ai', ...parsed });
-          }
-        }
-      } catch (aiErr) {
-        console.warn("⚠️ Fallback por error en llamada Gemini AI:", aiErr.message);
-      }
+    // Determinar categoría de mayor gasto para enriquecer la búsqueda RAG
+    const byCategory = {};
+    for (const exp of recentExpenses) {
+      const cat = exp.category || 'Otros';
+      byCategory[cat] = (byCategory[cat] || 0) + parseFloat(exp.amount || 0);
     }
+    const topExpenseCategory = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+    const habitsStreakAvg = habits.length
+      ? habits.reduce((s, h) => s + Number(h.streak || 0), 0) / habits.length
+      : 0;
 
-    // Fallback algorítmico inteligente (heurística offline / sin API key)
-    const priorityMission = activeMissions[0];
-    const remaining = priorityMission ? (parseFloat(priorityMission.target_amount) - parseFloat(priorityMission.current_amount)) : 0;
-    const suggestedDaily = remaining > 0 ? (remaining / 30).toFixed(2) : "5.00";
-
-    return res.json({
-      source: 'salvia_algorithmic_engine',
-      diagnosis: priorityMission
-        ? `Para tu meta '${priorityMission.title}', si apartas S/ ${suggestedDaily} al día lograrás financiarla en un mes.`
-        : 'Tus finanzas están balanceadas. Te sugerimos crear una nueva meta de ahorro para mantener el hábito.',
-      daily_tip: 'Aplica el reto del redondeo: cada gasto diario redondéalo hacia arriba y transfiere la diferencia a tu bóveda.',
-      motivation: '¡Tu jardín financiero crece con cada sol que decides cuidar! 🌱✨'
+    const advice = await generateOpenRouterAdvice({
+      question: typeof question === 'string' ? question.trim() : '',
+      profile: {
+        monthlyIncome: parseFloat(user?.monthly_income || 1500),
+        totalSpent,
+        topExpenseCategory,
+        activeMissions: activeMissions.map(m => ({
+          title: m.title,
+          meta: m.target_amount,
+          actual: m.current_amount,
+          deadline: m.deadline,
+        })),
+        habits: habits.map(h => ({ title: h.title, streak: h.streak || 0 })),
+        habitsStreakAvg,
+      },
     });
+
+    return res.json(advice);
   } catch (err) {
-    console.error("Error en asesor IA:", err.message);
+    console.error("Error en asesor IA (OpenRouter + RAG):", err.message);
     res.status(500).json({ error: 'Error procesando recomendación de IA' });
   }
+}
+
+app.post('/api/ai/savings-advisor', handleAiAdvisorRequest);
+app.post('/api/ai/ask', handleAiAdvisorRequest);
+
+// Consultar base de conocimiento RAG (Finanzas y Buenos Hábitos)
+app.get('/api/ai/knowledge', (req, res) => {
+  const { q, category, limit } = req.query;
+  if (q) {
+    const results = retrieveRelevantKnowledge({
+      query: String(q),
+      category: category ? String(category) : null,
+      topK: Math.min(12, Math.max(1, parseInt(limit, 10) || 4)),
+    });
+    return res.json({ count: results.length, items: results });
+  }
+  const items = category
+    ? FINANCIAL_KNOWLEDGE_BASE.filter(d => d.category === String(category))
+    : FINANCIAL_KNOWLEDGE_BASE;
+  return res.json({ count: items.length, items });
 });
 
 // Editar únicamente los datos configurables; no reinicia rachas ni premios.
@@ -973,8 +983,8 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Solo iniciar servidor HTTP local cuando se ejecuta directamente (node server.js)
-if (require.main === module && !process.env.VERCEL) {
+// Si no está corriendo como Serverless Function en Vercel, iniciar servidor HTTP
+if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`🍁 Servidor rústico de finanzas corriendo en http://localhost:${PORT}`);
   });

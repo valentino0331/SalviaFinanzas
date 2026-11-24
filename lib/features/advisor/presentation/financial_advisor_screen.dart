@@ -6,6 +6,7 @@ import '../../../core/theme.dart';
 import '../../../core/providers.dart';
 import '../../expenses/presentation/expense_form.dart';
 import '../../savings/presentation/savings_screen.dart';
+import 'widgets/ai_rag_chat_sheet.dart';
 
 class FinancialAdvisorScreen extends ConsumerWidget {
   const FinancialAdvisorScreen({super.key});
@@ -122,6 +123,8 @@ class FinancialAdvisorScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 18),
+                    const AiRagAdvisorBanner(),
+                    const SizedBox(height: 16),
 
                     // HERO CARD: Verde Oscuro Gradiente con Dial de Puntaje
                     Container(
