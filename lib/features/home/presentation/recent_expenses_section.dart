@@ -242,6 +242,7 @@ class _ExpenseTile extends ConsumerWidget {
         onDismissed: (_) => _eliminar(context, ref),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
+          onTap: () => showExpenseForm(context, expense: expense),
           onLongPress: () => _agregarARapidos(context, ref),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

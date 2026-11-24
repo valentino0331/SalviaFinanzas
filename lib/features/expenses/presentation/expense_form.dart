@@ -5,11 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_theme.dart';
 import '../application/gestor_gastos.dart';
+import '../domain/expense.dart';
 import '../domain/expense_category.dart';
 import '../domain/expense_validators.dart';
 
 
-Future<void> showExpenseForm(BuildContext context) {
+Future<void> showExpenseForm(BuildContext context, {Expense? expense}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -18,13 +19,15 @@ Future<void> showExpenseForm(BuildContext context) {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
-    builder: (_) => const ExpenseForm(),
+    builder: (_) => ExpenseForm(expense: expense),
   );
 }
 
 
 class ExpenseForm extends ConsumerStatefulWidget {
-  const ExpenseForm({super.key});
+  const ExpenseForm({super.key, this.expense});
+
+  final Expense? expense;
 
   @override
   ConsumerState<ExpenseForm> createState() => _ExpenseFormState();
@@ -38,6 +41,19 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
   ExpenseCategory? _category;
   String? _categoryError;
   bool _saving = false;
+
+  bool get _editando => widget.expense != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.expense;
+    if (e != null) {
+      _amountCtrl.text = e.amount.toStringAsFixed(2);
+      _detailCtrl.text = e.detail;
+      _category = e.category;
+    }
+  }
 
   @override
   void dispose() {
@@ -61,16 +77,29 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
     setState(() => _saving = true);
 
     try {
-      await ref.read(gestorGastosProvider.notifier).agregarGasto(
-            monto: ExpenseValidators.parseAmount(_amountCtrl.text),
-            categoria: _category!,
-            detalle: _detailCtrl.text,
-          );
+      final gestor = ref.read(gestorGastosProvider.notifier);
+      final monto = ExpenseValidators.parseAmount(_amountCtrl.text);
+      if (_editando) {
+        await gestor.editarGasto(
+          idGasto: widget.expense!.id,
+          monto: monto,
+          categoria: _category!,
+          detalle: _detailCtrl.text,
+        );
+      } else {
+        await gestor.agregarGasto(
+          monto: monto,
+          categoria: _category!,
+          detalle: _detailCtrl.text,
+        );
+      }
       HapticFeedback.mediumImpact();
       navigator.pop();
       messenger.showSnackBar(
         SnackBar(
-          content: const Text('Gasto registrado con éxito 🌿'),
+          content: Text(_editando
+              ? 'Gasto actualizado con éxito 🌿'
+              : 'Gasto registrado con éxito 🌿'),
           backgroundColor: AppColors.brandGreen,
           behavior: SnackBarBehavior.floating,
         ),
@@ -83,8 +112,10 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
       if (!mounted) return;
       setState(() => _saving = false);
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo guardar el gasto. Intenta de nuevo.'),
+        SnackBar(
+          content: Text(_editando
+              ? 'No se pudo actualizar el gasto. Intenta de nuevo.'
+              : 'No se pudo guardar el gasto. Intenta de nuevo.'),
         ),
       );
     }
@@ -138,12 +169,14 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Registrar gasto',
+                _editando ? 'Editar gasto' : 'Registrar gasto',
                 style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 2),
               Text(
-                'Anótalo en segundos y cuida tu jardín financiero.',
+                _editando
+                    ? 'Corrige los datos de tu gasto.'
+                    : 'Anótalo en segundos y cuida tu jardín financiero.',
                 style: GoogleFonts.outfit(fontSize: 13, color: AppColors.textMuted),
               ),
               const SizedBox(height: 20),
@@ -151,7 +184,7 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
               // MONTO
               TextFormField(
                 controller: _amountCtrl,
-                autofocus: true,
+                autofocus: !_editando,
                 enabled: !_saving,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
@@ -249,7 +282,7 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
                           child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                         )
                       : Text(
-                          'Confirmar Registro',
+                          _editando ? 'Guardar Cambios' : 'Confirmar Registro',
                           style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                 ),

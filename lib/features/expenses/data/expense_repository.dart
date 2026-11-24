@@ -16,6 +16,13 @@ abstract class ExpenseRepository {
     required DateTime date,
   });
 
+  Future<Expense> actualizar({
+    required int id,
+    required double amount,
+    required ExpenseCategory category,
+    required String detail,
+  });
+
   Future<void> eliminarPorId(int id);
 }
 
@@ -75,6 +82,28 @@ class LocalExpenseRepository implements ExpenseRepository {
   }
 
   @override
+  Future<Expense> actualizar({
+    required int id,
+    required double amount,
+    required ExpenseCategory category,
+    required String detail,
+  }) async {
+    final items = await _leer();
+    final index = items.indexWhere((e) => e.id == id);
+    if (index == -1) throw StateError('Gasto no encontrado');
+    final actualizado = Expense(
+      id: id,
+      amount: amount,
+      category: category,
+      detail: detail,
+      date: items[index].date,
+    );
+    items[index] = actualizado;
+    await _escribir(items);
+    return actualizado;
+  }
+
+  @override
   Future<void> eliminarPorId(int id) async {
     final items = await _leer();
     items.removeWhere((e) => e.id == id);
@@ -106,6 +135,26 @@ class InMemoryExpenseRepository implements ExpenseRepository {
     );
     _items.add(nuevo);
     return nuevo;
+  }
+
+  @override
+  Future<Expense> actualizar({
+    required int id,
+    required double amount,
+    required ExpenseCategory category,
+    required String detail,
+  }) async {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) throw StateError('Gasto no encontrado');
+    final actualizado = Expense(
+      id: id,
+      amount: amount,
+      category: category,
+      detail: detail,
+      date: _items[index].date,
+    );
+    _items[index] = actualizado;
+    return actualizado;
   }
 
   @override
